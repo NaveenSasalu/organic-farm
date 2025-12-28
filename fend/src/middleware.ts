@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/request";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   // 1. Grab the auth_token cookie we set during login
