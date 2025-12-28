@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import AdminNav from "@/components/AdminNav";
 import Link from "next/link";
-import { UserPlus, MapPin, Info } from "lucide-react";
+import { UserPlus, MapPin, Info, ExternalLink } from "lucide-react";
 
 export default function FarmerListPage() {
   const [farmers, setFarmers] = useState([]);
