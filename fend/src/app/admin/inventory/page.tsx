@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import AdminNav from "@/components/AdminNav";
-import ProduceModal from "@/components/ProduceModal"; // The modal we created
+import ProduceModal from "@/components/ProduceModel"; // The modal we created
 import { Plus, Save, Edit3, PlusCircle } from "lucide-react";
 
 export default function InventoryPage() {
