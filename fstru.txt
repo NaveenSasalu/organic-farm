@@ -1,0 +1,41 @@
+/frontend
+├── src/
+│   ├── app/                # NEXT.JS 15 APP ROUTER (The "Routing" layer)
+│   │   ├── layout.tsx      # Root layout (Navbar, Footer)
+│   │   ├── page.tsx        # Homepage (Landing)
+│   │   ├── shop/           # /shop route
+│   │   │   └── page.tsx    # Product Grid page
+│   │   └── track/          # /track route
+│   │       └── page.tsx    # Order tracking page
+│   ├── components/         # SHARED UI (Buttons, Cards, Modals)
+│   ├── lib/                # LOGIC (API fetchers, WebSocket clients)
+│   └── hooks/              # STATE (useCart, useTracking)
+├── tailwind.config.ts      # Config stays at root
+├── next.config.ts          # Config stays at root
+└── package.json            # Config stays at root
+
+/organic-farm-project (Root)
+├── backend/                # Python FastAPI
+│   ├── app/
+│   │   ├── api/            # Route handlers (v1)
+│   │   ├── core/           # Config, Security, MinIO setup
+│   │   ├── models/         # SQLAlchemy/SQLModel database models
+│   │   ├── schemas/        # Pydantic validation schemas
+│   │   └── services/       # Business logic (Inventory, Order Tracking)
+│   ├── tests/
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/               # Next.js (React)
+│   ├── src/
+│   │   ├── app/            # Next.js App Router (Pages/Layouts)
+│   │   ├── components/     # UI Components (ProductCard, OrderTracker)
+│   │   ├── lib/            # API fetching & WebSocket clients
+│   │   └── hooks/          # Custom React hooks (useCart, useTracking)
+│   ├── public/             # Static assets
+│   ├── Dockerfile
+│   └── package.json
+├── k8s/                    # Future ArgoCD/K3s manifests
+│   ├── base/               # Common k8s manifests
+│   └── overlays/           # Env-specific (dev, prod)
+├── docker-compose.yml      # Local dev orchestration
+└── .env                    # Shared local environment variables

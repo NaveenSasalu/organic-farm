@@ -1,0 +1,16 @@
+# Local Secrets
+.env
+.env.*
+secrets-template.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Next.js
+node_modules/
+.next/
+dist/
+
+bend/create_admin.py

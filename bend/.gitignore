@@ -1,0 +1,79 @@
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+
+# -------------------------
+# Virtual Environments
+# -------------------------
+venv/
+.venv/
+env/
+ENV/
+
+# -------------------------
+# FastAPI / ASGI
+# -------------------------
+*.log
+*.sqlite3
+*.db
+
+# -------------------------
+# Environment Variables
+# -------------------------
+.env
+.env.*
+!.env.example
+
+# -------------------------
+# Testing / Coverage
+# -------------------------
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# -------------------------
+# Mypy / Type Checking
+# -------------------------
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# -------------------------
+# IDEs / Editors
+# -------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# -------------------------
+# OS Files
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Jupyter (if used)
+# -------------------------
+.ipynb_checkpoints/
+
+# -------------------------
+# Docker
+# -------------------------
+docker-compose.override.yml
+create_admin.py
