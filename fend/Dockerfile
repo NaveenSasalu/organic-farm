@@ -1,11 +1,11 @@
 # Stage 1: Build the application
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package*.json ./
 #RUN npm install
-RUN npm install --legacy-peer-deps
+RUN npm install 
 
 COPY . .
 
