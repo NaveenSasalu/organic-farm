@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.product import Farmer
-from sqlalchemy import select, selectinload
+from sqlalchemy import select
 from app.utils.storage import upload_to_minio
 from fastapi import UploadFile, File, Form
 from typing import Optional

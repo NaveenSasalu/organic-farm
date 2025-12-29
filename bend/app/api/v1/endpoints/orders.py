@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.models.order import Order, OrderItem
 from pydantic import BaseModel
 from typing import List
 from typing import Optional
-
-from sqlalchemy import select, selectinload, update
+from sqlalchemy import select, update
+from sqlalchemy.orm import selectinload
 from app.models.product import Product # Ensure this is imported
+from app.models.order import Order, OrderItem
 
 router = APIRouter()
 
@@ -51,19 +51,6 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
         order.status = "cancelled"
         await db.commit()
     return {"status": "cancelled"}
-
-
-@router.patch("/{order_id}/status")
-async def update_order_status(order_id: int, status: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Order).where(Order.id == order_id))
-    order = result.scalar_one_or_none()
-    
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    
-    order.status = status
-    await db.commit()
-    return {"status": "updated", "new_status": order.status}
 
 @router.post("/")
 async def create_order(order_data: OrderCreate, db: AsyncSession = Depends(get_db)):
@@ -114,3 +101,16 @@ async def create_order(order_data: OrderCreate, db: AsyncSession = Depends(get_d
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.patch("/{order_id}/status")
+async def update_order_status(order_id: int, status: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    order.status = status
+    await db.commit()
+    return {"status": "updated", "new_status": order.status}
