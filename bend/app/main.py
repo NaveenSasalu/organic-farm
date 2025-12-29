@@ -5,13 +5,18 @@ from app.api.v1.endpoints import auth # Add this import
 
 app = FastAPI(title="Organic Farm API")
 
-# Ensure CORS is configured correctly
+# Define the origins that are allowed to talk to your API
+origins = [
+    "https://of.kaayaka.in",
+    "http://of.kaayaka.in",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://of.kaayaka.in"], # Your production domain
-    allow_credentials=True,
-    allow_methods=["*"], # This must allow OPTIONS and POST
-    allow_headers=["*"],
+    allow_origins=origins,            # Trust only your domain
+    allow_credentials=True,           # Required for cookies/Auth headers
+    allow_methods=["*"],              # Allow GET, POST, OPTIONS, etc.
+    allow_headers=["*"],              # Allow all headers
 )
 
 app.include_router(products.router, prefix="/api/v1/products", tags=["products"])

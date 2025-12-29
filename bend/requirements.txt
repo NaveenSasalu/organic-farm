@@ -27,5 +27,5 @@ bcrypt==4.0.1
 # For CORS and cross-namespace communication
 httpx==0.26.0
 python-dotenv==1.0.1
-
+# minIO
 minio==7.2.0
