@@ -8,7 +8,7 @@ app = FastAPI(title="Organic Farm API")
 # Ensure CORS is configured correctly
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Your Frontend URL
+    allow_origins=["https://of.kaayaka.in"], # Your production domain
     allow_credentials=True,
     allow_methods=["*"], # This must allow OPTIONS and POST
     allow_headers=["*"],

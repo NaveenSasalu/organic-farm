@@ -1,6 +1,6 @@
 from jose import jwt, JWTError
 from app.core.security import SECRET_KEY, ALGORITHM
-from fastapi import Depends, Request
+from fastapi import Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.user import User

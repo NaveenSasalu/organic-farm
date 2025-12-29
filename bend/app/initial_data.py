@@ -2,9 +2,9 @@ import asyncio
 import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-
+from app.core.database import Base # Import from the new file
 from app.models.user import User            # <--- Must import models to register them
-from app.models.product import Base, Product, Farmer      # <--- Must import models to register them
+from app.models.product import Product, Farmer      # <--- Must import models to register them
 from app.models.order import Order
 from app.core.security import get_password_hash
 from app.core.config import settings

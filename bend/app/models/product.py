@@ -3,9 +3,7 @@ from sqlalchemy import String, Float, Boolean, Integer, ForeignKey
 from sqlalchemy import Column, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
-
-class Base(DeclarativeBase):
-    pass
+from app.core.database import Base # Import from the new file
 
 class Product(Base):
     __tablename__ = "products"
@@ -18,7 +16,7 @@ class Product(Base):
     # FIXED LINE BELOW: Added Mapped[bool]
     is_organic: Mapped[bool] = mapped_column(Boolean, default=True)
     image_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    
+
     farmer_id: Mapped[int] = mapped_column(ForeignKey("farmers.id"))
     farmer: Mapped["Farmer"] = relationship("Farmer", back_populates="products")
 

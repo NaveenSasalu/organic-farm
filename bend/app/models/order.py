@@ -1,7 +1,8 @@
 from sqlalchemy import String, Float, Integer, ForeignKey, DateTime, Date
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime, date
-from app.models.product import Base, Product
+from app.models.product import Product
+from app.core.database import Base # Import from the new file
 
 class Order(Base):
     __tablename__ = "orders"

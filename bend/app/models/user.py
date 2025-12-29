@@ -1,6 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, Integer, ForeignKey
 from app.models.product import Base, Farmer
+from app.core.database import Base # Import from the new file
 #from sqlalchemy.orm import Mapped, mapped_column
 # from app.db.base_class import Base
 

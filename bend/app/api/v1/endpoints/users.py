@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from app.api.deps import get_current_admin
 from app.models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
 
 router = APIRouter()
 
