@@ -3,8 +3,9 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from app.models.user import User
-from app.models.product import Farmer
+from app.models.user import User            # <--- Must import models to register them
+from app.models.product import Base, Product, Farmer      # <--- Must import models to register them
+from app.models.order import Order
 from app.core.security import get_password_hash
 from app.core.config import settings
 
@@ -13,6 +14,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def create_initial_data():
+    logging.info("🚀 Starting data initialization...")
+
+    async with engine.begin() as conn:
+        # This will look at all models imported above and create tables
+        await conn.run_sync(Base.metadata.create_all)
+        logging.info("✅ Database tables created/verified.")
+
     engine = create_async_engine(settings.DATABASE_URL)
     async_session = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -20,6 +28,7 @@ async def create_initial_data():
         try:
             # 1. Start a transaction
             async with session.begin():
+                                
                 # --- CHECK FOR EXISTING ADMIN ---
                 admin_email = "admin@kaayaka.in"
                 result = await session.execute(
