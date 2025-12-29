@@ -5,7 +5,7 @@ from app.api.v1.endpoints import auth # Add this import
 
 app = FastAPI(title="Organic Farm API")
 
-# Define the origins that are allowed to talk to your API
+# Define the origins that are allowed to talk to your APIs 
 origins = [
     "https://of.kaayaka.in",
     "http://of.kaayaka.in",

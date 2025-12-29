@@ -31,7 +31,7 @@ jobs:
         with:
           context: ./bend
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/farm-backend:1.1.0
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/farm-backend:1.1.0 #ver
           # Speeds up builds by caching layers in GitHub Actions
           cache-from: type=gha
           cache-to: type=gha,mode=max
