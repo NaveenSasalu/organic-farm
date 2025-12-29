@@ -1,7 +1,8 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Float, Boolean, Integer
+from sqlalchemy import String, Float, Boolean, Integer, ForeignKey
 from sqlalchemy import Column, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 class Base(DeclarativeBase):
     pass
@@ -16,7 +17,8 @@ class Product(Base):
     stock_qty: Mapped[float] = mapped_column(Float, default=0.0)
     # FIXED LINE BELOW: Added Mapped[bool]
     is_organic: Mapped[bool] = mapped_column(Boolean, default=True)
-
+    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
+    
     farmer_id: Mapped[int] = mapped_column(ForeignKey("farmers.id"))
     farmer: Mapped["Farmer"] = relationship("Farmer", back_populates="products")
 

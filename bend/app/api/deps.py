@@ -1,5 +1,10 @@
 from jose import jwt, JWTError
 from app.core.security import SECRET_KEY, ALGORITHM
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
+from app.models.user import User
+from sqlalchemy import select
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
     token = request.cookies.get("auth_token")

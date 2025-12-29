@@ -1,8 +1,7 @@
-from sqlalchemy import String, Float, Integer, ForeignKey, DateTime
+from sqlalchemy import String, Float, Integer, ForeignKey, DateTime, Date
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from datetime import datetime
-from app.models.product import Base
-
+from datetime import datetime, date
+from app.models.product import Base, Product
 
 class Order(Base):
     __tablename__ = "orders"
@@ -13,7 +12,9 @@ class Order(Base):
     address: Mapped[str] = mapped_column(String(255))
     total_price: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    status: Mapped[str] = mapped_column(String(20), default="pending")
+    
+    delivery_date: Mapped[date] = mapped_column(Date, nullable=True) 
+    status: Mapped[str] = mapped_column(String(20), default="pending") # pending, packed, delivered, cancelled
 
     # Relationship to items
     items: Mapped[list["OrderItem"]] = relationship("OrderItem", back_populates="order")
@@ -28,3 +29,5 @@ class OrderItem(Base):
     price_at_time: Mapped[float] = mapped_column(Float)
 
     order: Mapped["Order"] = relationship("Order", back_populates="items")
+
+    product: Mapped["Product"] = relationship("Product")
