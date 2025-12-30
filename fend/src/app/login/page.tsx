@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Leaf, Lock, Mail, AlertCircle } from "lucide-react";
+import { apiRequest } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,36 +10,71 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // b - start
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // FastAPI's OAuth2PasswordRequestForm expects URLSearchParams (form-data)
+    // 1. Maintain the URLSearchParams for OAuth2 compatibility
     const formData = new URLSearchParams();
     formData.append("username", email);
     formData.append("password", password);
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/auth/login", {
+      // 2. Use apiRequest but pass the formData as the body
+      const data = await apiRequest("/auth/login", {
         method: "POST",
+        // Do NOT use JSON.stringify here
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        // Store only the role for UI logic (The secure token stays in the cookie)
+      // 3. Your helper already runs res.json(), so 'data' is the actual object
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
         localStorage.setItem("user_role", data.role);
+
         router.push(
           data.role === "admin" ? "/admin/orders" : "/admin/inventory"
         );
-      } else {
-        setError("Invalid credentials. Access denied.");
       }
-    } catch (err) {
-      setError("Connection to server failed.");
+    } catch (err: any) {
+      // 4. Your helper throws errors, so catch them here
+      setError(err.message || "Invalid credentials.");
     }
   };
+  // b - end
+
+  // const handleLogin = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setError("");
+
+  //   // FastAPI's OAuth2PasswordRequestForm expects URLSearchParams (form-data)
+  //   const formData = new URLSearchParams();
+  //   formData.append("username", email);
+  //   formData.append("password", password);
+
+  //   try {
+  //     const res = await fetch("http://localhost:8000/api/v1/auth/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  //       body: formData,
+  //     });
+
+  //     if (res.ok) {
+  //       const data = await res.json();
+  //       // Store only the role for UI logic (The secure token stays in the cookie)
+  //       localStorage.setItem("user_role", data.role);
+  //       router.push(
+  //         data.role === "admin" ? "/admin/orders" : "/admin/inventory"
+  //       );
+  //     } else {
+  //       setError("Invalid credentials. Access denied.");
+  //     }
+  //   } catch (err) {
+  //     setError("Connection to server failed.");
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-[#fbfaf8] flex items-center justify-center p-6">
