@@ -12,8 +12,8 @@ export default function InventoryPage() {
 
   const loadData = async () => {
     const [pRes, fRes] = await Promise.all([
-      fetch("http://localhost:8000/api/v1/products/"),
-      fetch("http://localhost:8000/api/v1/farmers/"),
+      fetch("https://of.kaayaka.in/api/v1/products/"),
+      fetch("https://of.kaayaka.in/api/v1/farmers/"),
     ]);
     setProducts(await pRes.json());
     setFarmers(await fRes.json());
@@ -25,8 +25,8 @@ export default function InventoryPage() {
     // you can just hit a special "/my-products" endpoint.
     const url =
       role === "admin"
-        ? "http://localhost:8000/api/v1/products/"
-        : "http://localhost:8000/api/v1/products/me";
+        ? "https://of.kaayaka.in/api/v1/products/"
+        : "https://of.kaayaka.in/api/v1/products/me";
 
     const res = await fetch(url, { credentials: "include" });
     setProducts(await res.json());

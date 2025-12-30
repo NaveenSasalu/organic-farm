@@ -10,7 +10,7 @@ export default function ProductForm({ product, onClose, onRefresh }: any) {
     const formData = new FormData(e.target);
     if (product?.id) formData.append("id", product.id);
 
-    await fetch("http://localhost:8000/api/v1/products/", {
+    await fetch("https://of.kaayaka.in/api/v1/products/", {
       method: "POST",
       body: formData,
     });

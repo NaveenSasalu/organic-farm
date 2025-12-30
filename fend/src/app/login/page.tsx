@@ -43,38 +43,6 @@ export default function LoginPage() {
       setError(err.message || "Invalid credentials.");
     }
   };
-  // b - end
-
-  // const handleLogin = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setError("");
-
-  //   // FastAPI's OAuth2PasswordRequestForm expects URLSearchParams (form-data)
-  //   const formData = new URLSearchParams();
-  //   formData.append("username", email);
-  //   formData.append("password", password);
-
-  //   try {
-  //     const res = await fetch("http://localhost:8000/api/v1/auth/login", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  //       body: formData,
-  //     });
-
-  //     if (res.ok) {
-  //       const data = await res.json();
-  //       // Store only the role for UI logic (The secure token stays in the cookie)
-  //       localStorage.setItem("user_role", data.role);
-  //       router.push(
-  //         data.role === "admin" ? "/admin/orders" : "/admin/inventory"
-  //       );
-  //     } else {
-  //       setError("Invalid credentials. Access denied.");
-  //     }
-  //   } catch (err) {
-  //     setError("Connection to server failed.");
-  //   }
-  // };
 
   return (
     <div className="min-h-screen bg-[#fbfaf8] flex items-center justify-center p-6">

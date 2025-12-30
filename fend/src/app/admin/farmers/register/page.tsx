@@ -18,7 +18,7 @@ export default function RegisterFarmer() {
     try {
       // 2. Send the formData object directly. DO NOT set Content-Type header.
       // The browser will automatically set it to multipart/form-data with a "boundary"
-      const res = await fetch(`http://localhost:8000/api/v1/farmers/`, {
+      const res = await fetch(`https://of.kaayaka.in/api/v1/farmers/`, {
         method: "POST",
         body: formData,
       });

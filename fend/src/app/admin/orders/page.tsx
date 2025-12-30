@@ -8,14 +8,14 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/v1/orders/")
+    fetch("https://of.kaayaka.in/api/v1/orders/")
       .then((res) => res.json())
       .then((data) => setOrders(data));
   }, []);
 
   const markAsDelivered = async (orderId: number) => {
     await fetch(
-      `http://localhost:8000/api/v1/orders/${orderId}/status?status=delivered`,
+      `https://of.kaayaka.in/api/v1/orders/${orderId}/status?status=delivered`,
       {
         method: "PATCH",
       }

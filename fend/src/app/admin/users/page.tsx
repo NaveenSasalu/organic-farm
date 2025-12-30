@@ -13,7 +13,7 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = async () => {
-    const res = await fetch("http://localhost:8000/api/v1/users/", {
+    const res = await fetch("https://of.kaayaka.in/api/v1/users/", {
       credentials: "include",
     });
     if (res.ok) setUsers(await res.json());
@@ -27,7 +27,7 @@ export default function UserManagementPage() {
   const toggleRole = async (userId: number, currentRole: string) => {
     const newRole = currentRole === "admin" ? "farmer" : "admin";
     const res = await fetch(
-      `http://localhost:8000/api/v1/users/${userId}/role?role=${newRole}`,
+      `https://of.kaayaka.in/api/v1/users/${userId}/role?role=${newRole}`,
       {
         method: "PATCH",
         credentials: "include",
