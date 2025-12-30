@@ -1,10 +1,14 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 <<<<<<< HEAD
+
 ## Getting Started - nk 1.0.9
+
 =======
-## Getting Started
->>>>>>> 602c6193b45e65e58db8d6ddcc3a987cb12202bd
+
+## Getting Started - v2
+
+> > > > > > > 602c6193b45e65e58db8d6ddcc3a987cb12202bd
 
 First, run the development server:
 
