@@ -10,7 +10,8 @@ export async function fetchProducts() {
       method: "GET",
     });
 
-    return products;
+    // chaged to return json
+    return products.json();
   } catch (err: any) {
     // 2. The error thrown here comes from the 'throw' inside apiRequest
     console.error("Fetch error:", err.message);
