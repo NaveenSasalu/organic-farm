@@ -11,7 +11,7 @@ COPY . .
 
 # Set the backend URL during build time
 # (Next.js needs this at build time to bake it into the client-side code)
-ENV NEXT_PUBLIC_API_URL=https://of.kaayaka.in/api
+ENV NEXT_PUBLIC_API_URL=https://of.kaayaka.in/api/v1
 RUN npm run build
 
 # Stage 2: Production runner
