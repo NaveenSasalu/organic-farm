@@ -2,17 +2,17 @@ import uuid
 from io import BytesIO
 from minio import Minio
 from fastapi import UploadFile
-from app.core.config import Settings
+from app.core.config import settings
 
 # Initialize client using sanitized settings
 MINIO_CLIENT = Minio(
-    Settings.MINIO_ENDPOINT,        # e.g., "minio-service.infra.svc.cluster.local:9000"
-    access_key=Settings.MINIO_ACCESS_KEY,
-    secret_key=Settings.MINIO_SECRET_KEY,
+    settings.MINIO_ENDPOINT,        # e.g., "minio-service.infra.svc.cluster.local:9000"
+    access_key=settings.MINIO_ACCESS_KEY,
+    secret_key=settings.MINIO_SECRET_KEY,
     secure=False # Use False for internal cluster traffic
 )
 
-BUCKET_NAME = Settings.MINIO_BUCKET
+BUCKET_NAME = settings.MINIO_BUCKET
 
 async def upload_to_minio(file: UploadFile) -> str:
     # 1. Create unique filename
