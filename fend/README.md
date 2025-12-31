@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 <<<<<<< HEAD
 
-## Getting Started - nk 1.0.4
+## Getting Started - nk 1.0.2
 
 =======
 
