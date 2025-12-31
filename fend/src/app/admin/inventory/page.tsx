@@ -19,19 +19,6 @@ export default function InventoryPage() {
     setFarmers(await fRes.json());
   };
 
-  const fetchProducts = async () => {
-    const role = localStorage.getItem("user_role");
-    // If the backend is set up to detect the user from the cookie,
-    // you can just hit a special "/my-products" endpoint.
-    const url =
-      role === "admin"
-        ? "https://of.kaayaka.in/api/v1/products/"
-        : "https://of.kaayaka.in/api/v1/products/me";
-
-    const res = await fetch(url, { credentials: "include" });
-    setProducts(await res.json());
-  };
-
   useEffect(() => {
     loadData();
   }, []);
@@ -44,20 +31,15 @@ export default function InventoryPage() {
             FARM INVENTORY
           </h1>
           {/* ADD PRODUCE BUTTON */}
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-black text-stone-900">
-              Inventory & Stock
-            </h1>
-            <button
-              onClick={() => {
-                setEditingProduct(null);
-                setModalOpen(true);
-              }}
-              className="bg-green-800 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100"
-            >
-              <PlusCircle size={20} /> Add New Harvest
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setEditingProduct(null);
+              setModalOpen(true);
+            }}
+            className="bg-green-800 text-white px-8 py-4 rounded-[2rem] font-bold flex items-center gap-2 hover:bg-green-700 transition-all shadow-xl shadow-green-100"
+          >
+            <Plus size={20} /> Add Harvest
+          </button>
         </div>
 
         <AdminNav />

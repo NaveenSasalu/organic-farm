@@ -27,6 +27,7 @@ export default function LoginPage() {
         // Do NOT use JSON.stringify here
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData,
+        credentials: "include",
       });
 
       // 3. Your helper already runs res.json(), so 'data' is the actual object

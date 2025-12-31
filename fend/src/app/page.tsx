@@ -104,7 +104,7 @@ export default async function Home() {
                   <div className="flex flex-col">
                     <span className="text-stone-400 text-xs font-bold uppercase tracking-tighter">
                       {product.stock_qty > 0
-                        ? `${product.stock_qty} remaining`
+                        ? `${product.stock_qty} remining`
                         : "Out of Stock"}
                     </span>
                     <span className="text-3xl font-black text-stone-900">
