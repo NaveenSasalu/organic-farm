@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User # Adjust path to your User model
+import bcrypt
 
 # Use the fixed bcrypt version as discussed earlier
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

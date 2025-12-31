@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/lib/useAuth"; // Adjust path based on your setup
+import LoginPage from "@/components/Login";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -27,28 +28,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
-      <form onSubmit={handleLogin}>
-        <h2>Login</h2>
-        {localError && <p className="error-text">{localError}</p>}
-
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-        />
-
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-        />
-
-        <button type="submit">Sign In</button>
-      </form>
+      <LoginPage />
     </div>
   );
 }
