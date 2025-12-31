@@ -16,7 +16,7 @@ export default function ProduceModal({
     const formData = new FormData(e.currentTarget);
     if (product) formData.append("id", product.id); // Add ID if editing
 
-    const res = await fetch("https://of.kaayaka.in/api/v1/products/upsert", {
+    const res = await fetch("https://of.kaayaka.in/api/v1/products/upsert/", {
       method: "POST",
       body: formData,
     });
