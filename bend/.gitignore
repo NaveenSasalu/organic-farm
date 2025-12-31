@@ -77,3 +77,5 @@ Thumbs.db
 # -------------------------
 docker-compose.override.yml
 create_admin.py
+
+app/api/v1/endpoints/b-auth.cp

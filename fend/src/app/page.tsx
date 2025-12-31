@@ -63,11 +63,12 @@ export default async function Home() {
                 )}
               </div>
               {/* Inside your Product Card loop in page.tsx */}
+              {/* Replace the current Link section with this safer version */}
               <Link
-                href={`/farmer/${product.farmer.id}`}
+                href={`/farmer/${product.farmer?.id || "#"}`}
                 className="flex items-center gap-2 mt-2 group/farmer cursor-pointer"
               >
-                {product.farmer.profile_pic ? (
+                {product.farmer?.profile_pic ? (
                   <img
                     src={product.farmer.profile_pic}
                     className="w-8 h-8 rounded-full object-cover border-2 border-green-100"
@@ -75,13 +76,13 @@ export default async function Home() {
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-[10px] font-bold text-amber-700">
-                    {product.farmer.name[0]}
+                    {product.farmer?.name?.[0] || "?"}
                   </div>
                 )}
                 <span className="text-xs font-bold text-stone-500 group-hover/farmer:text-green-700 transition-colors">
                   Grown by{" "}
                   <span className="underline decoration-amber-300">
-                    {product.farmer.name}
+                    {product.farmer?.name || "Unknown Farmer"}
                   </span>
                 </span>
               </Link>

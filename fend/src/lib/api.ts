@@ -3,7 +3,10 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://of.kaayaka.in/api/v1";
 
 export async function fetchProducts() {
-  const res = await fetch(`${API_BASE_URL}/products/`);
+  const res = await fetch(`${API_BASE_URL}/products`, {
+    next: { revalidate: 60 }, // Optional: Cache products for 60 seconds
+  });
+
   if (!res.ok) throw new Error("Farm is resting. Try again later.");
   return res.json();
 }

@@ -8,7 +8,7 @@ app = FastAPI(title="Organic Farm API")
 # Define the origins that are allowed to talk to your APIs 
 origins = [
     "https://of.kaayaka.in",
-    "http://of.kaayaka.in",
+    # "http://of.kaayaka.in",
 ]
 
 app.add_middleware(
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_origins=origins,            # Trust only your domain
     allow_credentials=True,           # Required for cookies/Auth headers
     allow_methods=["*"],              # Allow GET, POST, OPTIONS, etc.
-    allow_headers=["Authorization", "Content-Type", "Accept"],              # Allow all headers
+    allow_headers=["*"],              # Allow all headers
 )
 
 app.include_router(products.router, prefix="/api/v1/products", tags=["products"])

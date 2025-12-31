@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import AdminNav from "@/components/AdminNav";
 import ProduceModal from "@/components/ProduceModel"; // The modal we created
+import { usePathname, useRouter } from "next/navigation";
 import { Plus, Save, Edit3, PlusCircle } from "lucide-react";
 
 export default function InventoryPage() {

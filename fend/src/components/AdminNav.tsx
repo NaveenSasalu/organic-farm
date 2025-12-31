@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/useAuth"; // Centralized Auth Hook
 import {
   ShoppingCart,
   Leaf,
@@ -14,42 +15,25 @@ import {
 
 export default function AdminNav() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { logout } = useAuth(); // Destructure the logout function
   const [role, setRole] = useState<string | null>(null);
 
-  // Load the role from localStorage on mount
   useEffect(() => {
+    // Only access localStorage after component mounts (client-side)
     setRole(localStorage.getItem("user_role"));
   }, []);
 
-  // Configure navigation based on permissions
+  // Configure base navigation
   const links = [
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Inventory", href: "/admin/inventory", icon: Leaf },
   ];
 
-  // Only show these to users with 'admin' role
+  // Dynamically add admin-only links
   if (role === "admin") {
     links.push({ name: "Farmers", href: "/admin/farmers", icon: Users });
     links.push({ name: "Staff", href: "/admin/users", icon: Shield });
   }
-
-  const handleLogout = async () => {
-    try {
-      const res = await fetch("https://of.kaayaka.in/api/v1/auth/logout/", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (res.ok) {
-        localStorage.removeItem("user_role");
-        // Hard refresh to clear all internal state
-        window.location.href = "/login";
-      }
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
 
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-10 border-b border-stone-200 pb-6">
@@ -77,14 +61,16 @@ export default function AdminNav() {
       <div className="flex items-center gap-3 w-full md:w-auto">
         <Link
           href="/"
+          target="_blank" // Open store in new tab
           className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-xl text-stone-600 font-bold hover:bg-stone-50 text-sm"
         >
           <ExternalLink size={16} />
           Store
         </Link>
 
+        {/* Trigger the centralized logout from useAuth hook */}
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="flex items-center gap-2 px-4 py-2 text-red-500 font-bold hover:bg-red-50 rounded-xl transition text-sm"
         >
           <LogOut size={16} />
