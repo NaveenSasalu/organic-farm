@@ -1,5 +1,5 @@
-// src/components/Sidebar.tsx
-import { useAuth } from "../lib/useAuth";
+// src/components/Sidebar.tsx b
+import { useAuth } from "@/lib/useAuth";
 
 export const Sidebar = () => {
   const { logout } = useAuth();
