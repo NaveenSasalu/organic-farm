@@ -1,4 +1,4 @@
-// src/components/Sidebar.tsx b
+// src/components/Sidebar.tsx bo
 import { useAuth } from "@/lib/useAuth";
 
 export const Sidebar = () => {
