@@ -26,32 +26,75 @@ export async function fetchProducts() {
 // }
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  // Ensure the endpoint starts with a slash
   const url = `${API_BASE_URL}${
     endpoint.startsWith("/") ? endpoint : `/${endpoint}`
   }`;
 
-  // Automatically add Auth token if it exists in localStorage
+  // 1. Get token safely
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const defaultHeaders = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  // 2. Build headers dynamically
+  const headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) || {}),
   };
+
+  // 3. ONLY add Authorization if token is a non-empty string and not "null"
+  if (token && token !== "null" && token !== "undefined") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // 4. Default Content-Type for JSON (unless sending FormData)
+  if (!(options.body instanceof URLSearchParams) && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
+    headers,
   });
+
+  // Handle common auth errors globally
+  if (response.status === 401) {
+    localStorage.removeItem("token");
+    // window.location.href = '/login'; // Optional: auto-redirect on expiry
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `API Error: ${response.status}`);
+    throw new Error(errorData.detail || `Error ${response.status}`);
   }
 
   return response.json();
 }
+
+// export async function apiRequest(endpoint: string, options: RequestInit = {}) {
+//   // Ensure the endpoint starts with a slash
+//   const url = `${API_BASE_URL}${
+//     endpoint.startsWith("/") ? endpoint : `/${endpoint}`
+//   }`;
+
+//   // Automatically add Auth token if it exists in localStorage
+//   const token =
+//     typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+//   const defaultHeaders = {
+//     "Content-Type": "application/json",
+//     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+//   };
+
+//   const response = await fetch(url, {
+//     ...options,
+//     headers: {
+//       ...defaultHeaders,
+//       ...options.headers,
+//     },
+//   });
+
+//   if (!response.ok) {
+//     const errorData = await response.json().catch(() => ({}));
+//     throw new Error(errorData.detail || `API Error: ${response.status}`);
+//   }
+
+//   return response.json();
+// }

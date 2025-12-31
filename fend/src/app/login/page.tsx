@@ -31,14 +31,30 @@ export default function LoginPage() {
       });
 
       // 3. Your helper already runs res.json(), so 'data' is the actual object
+      // Inside handleLogin
       if (data.access_token) {
+        // Good: data.access_token exists
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("user_role", data.role);
 
         router.push(
           data.role === "admin" ? "/admin/orders" : "/admin/inventory"
         );
+      } else {
+        // Defensive: Clear them if login failed for some reason
+        localStorage.removeItem("token");
+        localStorage.removeItem("user_role");
       }
+
+      //
+      // if (data.access_token) {
+      //   localStorage.setItem("token", data.access_token);
+      //   localStorage.setItem("user_role", data.role);
+
+      //   router.push(
+      //     data.role === "admin" ? "/admin/orders" : "/admin/inventory"
+      //   );
+      // }
     } catch (err: any) {
       // 4. Your helper throws errors, so catch them here
       setError(err.message || "Invalid credentials.");
