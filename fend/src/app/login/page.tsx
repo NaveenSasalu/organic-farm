@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     try {
       // 2. Use apiRequest but pass the formData as the body
-      const data = await apiRequest("/auth/login", {
+      const res = await fetch("https://of.kaayaka.in/api/v1/auth/login/", {
         method: "POST",
         // Do NOT use JSON.stringify here
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -32,11 +32,10 @@ export default function LoginPage() {
 
       // 3. Your helper already runs res.json(), so 'data' is the actual object
       // Inside handleLogin
-      if (data.access_token) {
-        // Good: data.access_token exists
-        localStorage.setItem("token", data.access_token);
+      if (res.ok) {
+        const data = await res.json();
+        // Store only the role for UI logic (The secure token stays in the cookie)
         localStorage.setItem("user_role", data.role);
-
         router.push(
           data.role === "admin" ? "/admin/orders" : "/admin/inventory"
         );
@@ -45,16 +44,6 @@ export default function LoginPage() {
         localStorage.removeItem("token");
         localStorage.removeItem("user_role");
       }
-
-      //
-      // if (data.access_token) {
-      //   localStorage.setItem("token", data.access_token);
-      //   localStorage.setItem("user_role", data.role);
-
-      //   router.push(
-      //     data.role === "admin" ? "/admin/orders" : "/admin/inventory"
-      //   );
-      // }
     } catch (err: any) {
       // 4. Your helper throws errors, so catch them here
       setError(err.message || "Invalid credentials.");

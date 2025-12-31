@@ -67,34 +67,3 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   return response.json();
 }
-
-// export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-//   // Ensure the endpoint starts with a slash
-//   const url = `${API_BASE_URL}${
-//     endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-//   }`;
-
-//   // Automatically add Auth token if it exists in localStorage
-//   const token =
-//     typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-//   const defaultHeaders = {
-//     "Content-Type": "application/json",
-//     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-//   };
-
-//   const response = await fetch(url, {
-//     ...options,
-//     headers: {
-//       ...defaultHeaders,
-//       ...options.headers,
-//     },
-//   });
-
-//   if (!response.ok) {
-//     const errorData = await response.json().catch(() => ({}));
-//     throw new Error(errorData.detail || `API Error: ${response.status}`);
-//   }
-
-//   return response.json();
-// }
