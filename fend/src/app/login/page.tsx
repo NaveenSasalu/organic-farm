@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 import { useAuth } from "@/lib/useAuth"; // Adjust path based on your setup
-import LogPage from "@/components/login";
+import LogPage from "@/components/Login";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
