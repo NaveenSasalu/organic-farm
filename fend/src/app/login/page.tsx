@@ -1,8 +1,9 @@
 "use client"; // Critical for Next.js App Router
 
 import React, { useState } from "react";
+
 import { useAuth } from "@/lib/useAuth"; // Adjust path based on your setup
-import LoginPage from "@/components/Login";
+import LogPage from "@/components/login";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -28,7 +29,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
-      <LoginPage />
+      <LogPage />
     </div>
   );
 }
