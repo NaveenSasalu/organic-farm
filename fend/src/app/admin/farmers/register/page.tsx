@@ -22,42 +22,43 @@ export default function RegisterFarmer() {
     setLoading(true);
     setError("");
 
-    // 1. Capture the form data (includes the 'file' input)
     const formData = new FormData(e.currentTarget);
-
-    // 2. Get the token for Authorization
     const token = localStorage.getItem("token");
 
+    // Debug: Check if token exists before sending
+    if (!token) {
+      setError("No active session found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // 3. Explicitly use HTTPS and ensure no trailing slash mismatches
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`https://of.kaayaka.in/api/v1/farmers`, {
         method: "POST",
         headers: {
-          // Attach the token to solve the 401 issue
+          // 1. Manually attach the admin token
           Authorization: `Bearer ${token}`,
-          // IMPORTANT: Do NOT set Content-Type header when sending FormData
+          // 2. DO NOT set Content-Type: multipart/form-data
         },
-        body: formData,
+        body: formData, // FormData contains name, email, password, location, bio, and file
       });
 
       if (res.status === 401) {
         throw new Error(
-          "Unauthorized: Your session may have expired. Please login again."
+          "Your session expired. Please log in again to register a farmer."
         );
       }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          data.detail || "Registration failed. Please try again."
-        );
+        throw new Error(data.detail || "Registration failed.");
       }
 
-      // Success logic
       alert("Farmer registered successfully!");
       router.push("/admin/inventory");
     } catch (err: any) {
-      console.error("Registration Error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -106,7 +107,6 @@ export default function RegisterFarmer() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-stone-400 ml-1">
                 Farm Location
@@ -125,7 +125,6 @@ export default function RegisterFarmer() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-stone-400 ml-1">
                 Farmer Bio / Story
@@ -143,7 +142,6 @@ export default function RegisterFarmer() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-stone-400 ml-1">
                 Profile Picture
@@ -165,7 +163,31 @@ export default function RegisterFarmer() {
                 </p>
               </div>
             </div>
-
+            // Inside your return statement, add these two fields:
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-stone-400 ml-1">
+                Login Email
+              </label>
+              <input
+                name="email"
+                type="email"
+                required
+                className="..."
+                placeholder="farmer@kaayaka.in"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase text-stone-400 ml-1">
+                Temporary Password
+              </label>
+              <input
+                name="password"
+                type="password"
+                required
+                className="..."
+                placeholder="••••••••"
+              />
+            </div>
             <button
               type="submit"
               disabled={loading}
