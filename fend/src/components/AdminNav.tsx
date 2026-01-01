@@ -61,7 +61,6 @@ export default function AdminNav() {
       <div className="flex items-center gap-3 w-full md:w-auto">
         <Link
           href="/"
-          target="_blank" // Open store in new tab
           className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-xl text-stone-600 font-bold hover:bg-stone-50 text-sm"
         >
           <ExternalLink size={16} />
