@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("database-url")
         
     # MinIO (Pointing to infra namespace)
-    MINIO_ENDPOINT: str = "minio-service.infra.svc.cluster.local:9000"
+    #MINIO_ENDPOINT: str = "minio-service.infra.svc.cluster.local:9000"
+    MINIO_ENDPOINT: str = "https://mnio.kaayaka.in:9000"
     MINIO_ACCESS_KEY: str = os.getenv("minio-root-user")
     MINIO_SECRET_KEY: str = os.getenv("minio-password")
     MINIO_BUCKET: str = "organic-farm"
