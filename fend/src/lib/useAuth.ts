@@ -90,25 +90,3 @@ export const useAuth = () => {
 
   return { login, logout, error };
 };
-
-//////////
-
-const data = await response.json();
-
-if (data.access_token) {
-  // 1. For Frontend Logic
-  localStorage.setItem("token", data.access_token);
-  localStorage.setItem("user_role", data.role);
-
-  // 2. For Middleware (The Bouncer)
-  // We set the cookie manually here
-  document.cookie = `access_token=${data.access_token}; path=/; max-age=${
-    7 * 24 * 60 * 60
-  }; SameSite=Strict; Secure`;
-
-  // 3. Redirect
-  window.location.href =
-    data.role === "admin" ? "/admin/orders" : "/admin/inventory";
-}
-
-/////////////
