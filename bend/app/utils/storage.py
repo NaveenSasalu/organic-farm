@@ -4,12 +4,13 @@ from minio import Minio
 from fastapi import UploadFile
 from app.core.config import settings
 
-# Initialize client using sanitized settings
+# Initialize client using the INTERNAL service name
+# This ensures the backend doesn't need to go out to the internet to upload
 MINIO_CLIENT = Minio(
-    settings.MINIO_ENDPOINT,        # e.g., "minio-service.infra.svc.cluster.local:9000"
+    "minio-service.multi-farm.svc.cluster.local:9000", # Use the internal K8s DNS
     access_key=settings.MINIO_ACCESS_KEY,
     secret_key=settings.MINIO_SECRET_KEY,
-    secure=False # Use False for internal cluster traffic
+    secure=False # Internal cluster traffic is usually plain HTTP
 )
 
 BUCKET_NAME = settings.MINIO_BUCKET
@@ -23,7 +24,7 @@ async def upload_to_minio(file: UploadFile) -> str:
     file_data = await file.read()
     file_size = len(file_data)
     
-    # 3. Upload to MinIO
+    # 3. Upload to MinIO via INTERNAL connection
     MINIO_CLIENT.put_object(
         BUCKET_NAME,
         unique_name,
@@ -32,7 +33,6 @@ async def upload_to_minio(file: UploadFile) -> str:
         content_type=file.content_type
     )
     
-    # 4. Return the Production URL
-    # Note: We use the public domain for the returned link so the browser can see it
-    #return f"https://of.kaayaka.in/storage/{BUCKET_NAME}/{unique_name}"
-    return f"https://mnio.kaayaka.in:9000/storage/{BUCKET_NAME}/{unique_name}"
+    # 4. Return the EXTERNAL HTTPS URL for the browser
+    # NOTE: Remove the :9000 if your Ingress handles standard HTTPS (443)
+    return f"https://mnio.kaayaka.in/{BUCKET_NAME}/{unique_name}"
