@@ -3,12 +3,13 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth"; // Adjust path based on your setup
-import { Leaf, Lock, Mail, AlertCircle, error } from "lucide-react";
+import { Leaf, Lock, Mail, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState("");
+  const [error, setError] = useState("");
 
   // Get the login function from your custom hook
   const { login } = useAuth();
