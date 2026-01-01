@@ -42,6 +42,6 @@ jobs:
         with:
           context: ./fend
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/farm-frontend:2.0.7
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/farm-frontend:2.0.8
           cache-from: type=gha
           cache-to: type=gha,mode=max

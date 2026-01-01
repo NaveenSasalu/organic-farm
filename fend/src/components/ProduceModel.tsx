@@ -1,6 +1,7 @@
 "use client";
 
-import { X, Upload, Check } from "lucide-react";
+import { X, Upload, Check, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 export default function ProduceModal({
   isOpen,
@@ -9,21 +10,55 @@ export default function ProduceModal({
   farmers,
   onRefresh,
 }: any) {
+  const [issubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage("");
+
     const formData = new FormData(e.currentTarget);
-    if (product) formData.append("id", product.id); // Add ID if editing
+    
+    // 1. Handle ID for Edit Mode
+    if (product?.id) {
+      formData.append("id", product.id);
+    }
 
-    const res = await fetch("https://of.kaayaka.in/api/v1/products/upsert/", {
-      method: "POST",
-      body: formData,
-    });
+    // 2. Get Token from LocalStorage
+    const token = localStorage.getItem("token");
 
-    if (res.ok) {
+    try {
+      // 3. FORCE HTTPS and Remove Trailing Slash to avoid 404/Mixed Content
+      const res = await fetch("https://of.kaayaka.in/api/v1/products/upsert", {
+        method: "POST",
+        headers: {
+          // Add Authorization for the 401 issue
+          "Authorization": `Bearer ${token}`,
+          // Note: We do NOT set Content-Type here because we are sending FormData
+        },
+        body: formData,
+      });
+
+      if (res.status === 401) {
+        throw new Error("Session expired. Please log in again.");
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to save harvest");
+      }
+
+      // Success
       onRefresh();
       onClose();
+    } catch (err: any) {
+      setErrorMessage(err.message);
+      console.error("Upsert Error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -43,6 +78,12 @@ export default function ProduceModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
+          {errorMessage && (
+            <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-5">
             <div className="col-span-2 space-y-1">
               <label className="text-[10px] font-black uppercase text-stone-400 ml-1">
@@ -64,6 +105,7 @@ export default function ProduceModal({
               <input
                 name="price"
                 type="number"
+                step="0.01"
                 defaultValue={product?.price}
                 required
                 className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:ring-2 focus:ring-green-600"
@@ -72,7 +114,7 @@ export default function ProduceModal({
 
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-stone-400 ml-1">
-                Initial Stock
+                Stock Quantity
               </label>
               <input
                 name="stock_qty"
@@ -120,12 +162,13 @@ export default function ProduceModal({
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-stone-400 ml-1">
-              Harvest Photo
+              Harvest Photo {product && "(Leave blank to keep current)"}
             </label>
             <div className="relative border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center hover:border-green-400 transition cursor-pointer group">
               <input
                 name="file"
                 type="file"
+                accept="image/*"
                 className="absolute inset-0 opacity-0 cursor-pointer"
               />
               <Upload
@@ -140,9 +183,14 @@ export default function ProduceModal({
 
           <button
             type="submit"
-            className="w-full bg-green-800 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg shadow-green-100"
+            disabled={issubmitting}
+            className="w-full bg-green-800 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg shadow-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Harvest <Check size={20} />
+            {issubmitting ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <>Save Harvest <Check size={20} /></>
+            )}
           </button>
         </form>
       </div>
