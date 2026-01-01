@@ -7,7 +7,7 @@ from app.core.config import settings
 # Initialize client using the INTERNAL service name
 # This ensures the backend doesn't need to go out to the internet to upload
 MINIO_CLIENT = Minio(
-    "minio-service.multi-farm.svc.cluster.local:9000", # Use the internal K8s DNS
+    "minio-service.infra.svc.cluster.local:9000", # Use the internal K8s DNS
     access_key=settings.MINIO_ACCESS_KEY,
     secret_key=settings.MINIO_SECRET_KEY,
     secure=False # Internal cluster traffic is usually plain HTTP
