@@ -1,34 +1,64 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminNav from "@/components/AdminNav";
-import { UserPlus, MapPin, FileText, Camera } from "lucide-react";
+import {
+  UserPlus,
+  MapPin,
+  FileText,
+  Camera,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 export default function RegisterFarmer() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
-    // 1. Use FormData to capture the file and text inputs
+    // 1. Capture the form data (includes the 'file' input)
     const formData = new FormData(e.currentTarget);
 
+    // 2. Get the token for Authorization
+    const token = localStorage.getItem("token");
+
     try {
-      // 2. Send the formData object directly. DO NOT set Content-Type header.
-      // The browser will automatically set it to multipart/form-data with a "boundary"
-      const res = await fetch(`https://of.kaayaka.in/api/v1/farmers/`, {
+      // 3. Explicitly use HTTPS and ensure no trailing slash mismatches
+      const res = await fetch(`https://of.kaayaka.in/api/v1/farmers`, {
         method: "POST",
+        headers: {
+          // Attach the token to solve the 401 issue
+          Authorization: `Bearer ${token}`,
+          // IMPORTANT: Do NOT set Content-Type header when sending FormData
+        },
         body: formData,
       });
 
-      if (res.ok) {
-        alert("Farmer registered successfully!");
-        router.push("/admin/inventory");
+      if (res.status === 401) {
+        throw new Error(
+          "Unauthorized: Your session may have expired. Please login again."
+        );
       }
-    } catch (err) {
-      console.error(err);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data.detail || "Registration failed. Please try again."
+        );
+      }
+
+      // Success logic
+      alert("Farmer registered successfully!");
+      router.push("/admin/inventory");
+    } catch (err: any) {
+      console.error("Registration Error:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -50,6 +80,12 @@ export default function RegisterFarmer() {
               Tell the community about the person behind the harvest.
             </p>
           </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3 text-sm font-bold">
+              <AlertCircle size={18} /> {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -107,23 +143,41 @@ export default function RegisterFarmer() {
                 />
               </div>
             </div>
+
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-stone-400">
+              <label className="text-[10px] font-black uppercase text-stone-400 ml-1">
                 Profile Picture
               </label>
-              <input
-                name="file"
-                type="file"
-                required
-                className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl"
-              />
+              <div className="relative border-2 border-dashed border-stone-200 rounded-2xl p-8 text-center hover:border-green-400 transition-all group">
+                <input
+                  name="file"
+                  type="file"
+                  accept="image/*"
+                  required
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+                <Camera
+                  className="mx-auto text-stone-300 group-hover:text-green-600 mb-2"
+                  size={32}
+                />
+                <p className="text-xs text-stone-400 font-bold group-hover:text-stone-600">
+                  Select a friendly photo
+                </p>
+              </div>
             </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-800 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:bg-stone-300"
+              className="w-full bg-green-800 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:bg-stone-300 flex items-center justify-center gap-2"
             >
-              {loading ? "Registering..." : "Complete Registration"}
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} /> Registering...
+                </>
+              ) : (
+                "Complete Registration"
+              )}
             </button>
           </form>
         </div>
