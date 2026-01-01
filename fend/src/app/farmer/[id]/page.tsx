@@ -9,7 +9,6 @@ async function getFarmer(id: string) {
 }
 
 // src/app/farmer/[id]/page.tsx
-
 export default async function FarmerPage({
   params,
 }: {

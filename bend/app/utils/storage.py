@@ -34,4 +34,5 @@ async def upload_to_minio(file: UploadFile) -> str:
     
     # 4. Return the Production URL
     # Note: We use the public domain for the returned link so the browser can see it
-    return f"https://of.kaayaka.in/storage/{BUCKET_NAME}/{unique_name}"
+    #return f"https://of.kaayaka.in/storage/{BUCKET_NAME}/{unique_name}"
+    return f"https://mnio.kaayaka.in:9000/storage/{BUCKET_NAME}/{unique_name}"

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth"; // Adjust path
 
-export default function LoginPage() {
+export default function LogPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
