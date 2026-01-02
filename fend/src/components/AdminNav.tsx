@@ -19,21 +19,16 @@ export default function AdminNav() {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if token exists; if not, force logout
-    const token = localStorage.getItem("token");
-    if (!token) {
-      // This stops people who just type the URL if they have no token
-      window.location.href = "/login";
-      return;
-    }
     setRole(localStorage.getItem("user_role"));
   }, []);
 
+  // Shared links for everyone (Admins and Farmers)
   const links = [
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Inventory", href: "/admin/inventory", icon: Leaf },
   ];
 
+  // ONLY add these if the user is a super-admin
   if (role === "admin") {
     links.push({ name: "Farmers", href: "/admin/farmers", icon: Users });
     links.push({ name: "Staff", href: "/admin/users", icon: Shield });

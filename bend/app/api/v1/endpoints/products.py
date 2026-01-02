@@ -9,8 +9,28 @@ from fastapi import UploadFile, File, Form
 from typing import Optional
 from app.utils.storage import upload_to_minio
 from sqlalchemy.orm import joinedload
+from app.models.user import User
+from app.core.security import get_current_user
 
 router = APIRouter()
+
+@router.get("/")
+async def get_products(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Base query
+    query = select(Product)
+    
+    # If the logged-in user is a farmer, filter by their specific ID
+    if current_user.role == "farmer":
+        if not current_user.farmer_id:
+            raise HTTPException(status_code=403, detail="Farmer profile not linked")
+        query = query.where(Product.farmer_id == current_user.farmer_id)
+    
+    # Admins see everything, so no 'where' clause is added for them
+    result = await db.execute(query)
+    return result.scalars().all()
 
 @router.get("/")
 async def get_products(db: AsyncSession = Depends(get_db)):

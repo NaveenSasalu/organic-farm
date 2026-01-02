@@ -20,38 +20,42 @@ export default function ProduceModal({
     setIsSubmitting(true);
     setErrorMessage("");
 
+    // 1. Initialize FormData from the form fields
     const formData = new FormData(e.currentTarget);
-    
-    // 1. Handle ID for Edit Mode
+
+    // 2. Security: Get Role and FarmerID from LocalStorage
+    const role = localStorage.getItem("user_role");
+    const farmerId = localStorage.getItem("farmer_id");
+
+    // 3. Force the Farmer ID if the logged-in user is a Farmer
+    if (role === "farmer" && farmerId) {
+      formData.set("farmer_id", farmerId);
+    }
+
+    // 4. Handle ID for Edit Mode
     if (product?.id) {
       formData.append("id", product.id);
     }
 
-    // 2. Get Token from LocalStorage
     const token = localStorage.getItem("token");
 
     try {
-      // 3. FORCE HTTPS and Remove Trailing Slash to avoid 404/Mixed Content
       const res = await fetch("https://of.kaayaka.in/api/v1/products/upsert", {
         method: "POST",
         headers: {
-          // Add Authorization for the 401 issue
-          "Authorization": `Bearer ${token}`,
-          // Note: We do NOT set Content-Type here because we are sending FormData
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
-      if (res.status === 401) {
+      if (res.status === 401)
         throw new Error("Session expired. Please log in again.");
-      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.detail || "Failed to save harvest");
       }
 
-      // Success
       onRefresh();
       onClose();
     } catch (err: any) {
@@ -189,7 +193,9 @@ export default function ProduceModal({
             {issubmitting ? (
               <Loader2 className="animate-spin" size={20} />
             ) : (
-              <>Save Harvest <Check size={20} /></>
+              <>
+                Save Harvest <Check size={20} />
+              </>
             )}
           </button>
         </form>
