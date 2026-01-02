@@ -68,8 +68,8 @@ export const useAuth = () => {
 
     // 3. CLEAR COOKIE (Crucial for Middleware)
     // We set the expiry to a past date to delete it
-    document.cookie =
-      "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure";
+    //document.cookie =
+    //  "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure";
 
     // 4. RESET APP STATE
     window.location.href = "/";

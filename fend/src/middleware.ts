@@ -6,6 +6,20 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
   const { pathname } = request.nextUrl;
 
+  // 1. ALLOW the request if it's for login, api, or static files
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api") ||
+    pathname === "/" ||
+    pathname.includes(".") // for images/css/js
+  ) {
+    return NextResponse.next();
+  }
+
+  // 2. PROTECT Admin Routes
+  if (pathname.startsWith("/admin") && !token) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
   // 2. Define our protection logic
   const isAdminPage = pathname.startsWith("/admin");
   const isLoginPage = pathname === "/login";
