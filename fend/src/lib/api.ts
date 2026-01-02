@@ -1,32 +1,40 @@
-//const API_URL = process.env.NEXT_PUBLIC_API_URL;
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://of.kaayaka.in/api/v1";
+// 1. Define a solid Base URL with HTTPS enforcement
+export const API_BASE_URL = "https://of.kaayaka.in/api/v1";
+
+// 2. Helper to determine if we are running on the server (K8s pod) or browser
+const IS_SERVER = typeof window === "undefined";
 
 export async function fetchProducts() {
-  const res = await fetch(`${API_BASE_URL}/products/`); //, {
-  //   next: { revalidate: 60 }, // Optional: Cache products for 60 seconds
-  // });
+  // 3. INTERNAL NETWORKING (Optional but faster):
+  // If on server, talk to the backend service directly via K8s DNS
+  const fetchUrl = IS_SERVER
+    ? "http://farm-backend:8000/api/v1/products/all"
+    : `${API_BASE_URL}/products/all`;
 
-  if (!res.ok) throw new Error("Farm is resting. Try again later.");
-  return res.json();
+  try {
+    const res = await fetch(fetchUrl, {
+      // 4. CACHE CONTROL:
+      // 'no-store' ensures the Home Page doesn't show old data from the build cache
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.error(`Fetch failed with status: ${res.status}`);
+      throw new Error("Farm is resting. Try again later.");
+    }
+
+    const data = await res.json();
+
+    // 5. Data Integrity: Ensure we always return an array
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("fetchProducts error:", error);
+    return []; // Return empty array so the UI doesn't crash
+  }
 }
-
-// export async function fetchProducts() {
-//   try {
-//     // 1. apiRequest returns the actual DATA (e.g., an array of products)
-//     // not the "Response" object.
-//     const products = await apiRequest("/products", {
-//       method: "GET",
-//     });
-
-//     // chaged to return json
-//     return products.json();
-//   } catch (err: any) {
-//     // 2. The error thrown here comes from the 'throw' inside apiRequest
-//     console.error("Fetch error:", err.message);
-//     throw err; // Re-throw so the UI component can show an error state
-//   }
-// }
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${

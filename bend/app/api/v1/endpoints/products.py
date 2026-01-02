@@ -32,7 +32,7 @@ async def get_products(
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.get("/")
+@router.get("/all")
 async def get_products(db: AsyncSession = Depends(get_db)):
     # This fetches products AND their associated farmer info in one go
     result = await db.execute(
