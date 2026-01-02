@@ -49,7 +49,7 @@ export const useAuth = () => {
     // 1. Attempt server-side logout
     if (token) {
       try {
-        await fetch(`${API_URL}/auth/logout`, {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
