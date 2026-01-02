@@ -10,7 +10,7 @@ from typing import Optional
 from app.utils.storage import upload_to_minio
 from sqlalchemy.orm import joinedload
 from app.models.user import User
-from app.core.security import get_current_user
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
