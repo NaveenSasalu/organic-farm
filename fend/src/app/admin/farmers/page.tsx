@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import AdminNav from "@/components/AdminNav";
 import Link from "next/link";
 import { UserPlus, MapPin, Info, ExternalLink } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function FarmerListPage() {
   const [farmers, setFarmers] = useState([]);
 
   useEffect(() => {
-    fetch("https://of.kaayaka.in/api/v1/farmers/")
+    fetch(`${API_BASE_URL}/v1/farmers/`)
       .then((res) => res.json())
       .then((data) => setFarmers(data));
   }, []);

@@ -2,6 +2,7 @@
 
 import { X, Upload, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function ProduceModal({
   isOpen,
@@ -40,7 +41,7 @@ export default function ProduceModal({
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("https://of.kaayaka.in/api/v1/products/upsert", {
+      const res = await fetch(`${API_BASE_URL}/products/upsert`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

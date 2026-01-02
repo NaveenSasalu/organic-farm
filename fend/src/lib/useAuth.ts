@@ -1,8 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-const API_URL = "https://of.kaayaka.in/api/v1";
+import { API_BASE_URL } from "@/lib/api";
 
 export const useAuth = () => {
   const router = useRouter();
@@ -11,7 +10,7 @@ export const useAuth = () => {
   const login = async (email, password) => {
     setError("");
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: email, password: password }),

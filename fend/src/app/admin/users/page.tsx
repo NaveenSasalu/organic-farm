@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import AdminNav from "@/components/AdminNav";
+import { API_BASE_URL } from "@/lib/api";
 import {
   Shield,
   User as UserIcon,
@@ -20,7 +21,7 @@ export default function UserManagementPage() {
     try {
       // 1. Explicitly use HTTPS and remove trailing slash if needed
       // 2. Pass the Authorization header instead of just credentials
-      const res = await fetch("https://of.kaayaka.in/api/v1/users/", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/users/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -50,7 +51,7 @@ export default function UserManagementPage() {
 
     try {
       const res = await fetch(
-        `https://of.kaayaka.in/api/v1/users/${userId}/role?role=${newRole}`,
+        `${API_BASE_URL}/users/${userId}/role?role=${newRole}`,
         {
           method: "PATCH",
           headers: {

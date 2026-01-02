@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Package, Calendar, User, MapPin, XCircle, Truck } from "lucide-react";
 import AdminNav from "@/components/AdminNav";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -10,8 +11,8 @@ export default function AdminOrdersPage() {
   const fetchOrders = async () => {
     const url =
       statusFilter === "all"
-        ? "https://of.kaayaka.in/api/v1/orders/"
-        : `https://of.kaayaka.in/api/v1/orders/?status=${statusFilter}`;
+        ? `${API_BASE_URL}/v1/orders/`
+        : `${API_BASE_URL}/orders/?status=${statusFilter}`;
     const res = await fetch(url);
     setOrders(await res.json());
   };
@@ -22,7 +23,7 @@ export default function AdminOrdersPage() {
 
   const handleCancel = async (id: number) => {
     if (confirm("Are you sure you want to cancel this community order?")) {
-      await fetch(`https://of.kaayaka.in/api/v1/orders/${id}/cancel`, {
+      await fetch(`${API_BASE_URL}/orders/${id}/cancel`, {
         method: "PATCH",
       });
       fetchOrders();

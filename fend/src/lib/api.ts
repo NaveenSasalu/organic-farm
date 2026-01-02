@@ -7,11 +7,11 @@ const IS_SERVER = typeof window === "undefined";
 export async function fetchProducts() {
   // 3. INTERNAL NETWORKING (Optional but faster):
   // If on server, talk to the backend service directly via K8s DNS
-  const fetchUrl = IS_SERVER
-    ? "http://farm-backend:8000/api/v1/products/all"
-    : `${API_BASE_URL}/products/all/`;
+  // const fetchUrl = IS_SERVER
+  //   ? "http://farm-backend:8000/api/v1/products/all"
+  //   : `${API_BASE_URL}/products/all/`;
 
-  const fetchUrl1 = "https://of.kaayaka.in/api/v1/products/all/";
+  const fetchUrl1 = `${API_BASE_URL}/products/all/`;
 
   try {
     const res = await fetch(fetchUrl1, {

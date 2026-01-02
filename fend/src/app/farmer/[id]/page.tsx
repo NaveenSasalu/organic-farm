@@ -1,8 +1,10 @@
+"use client";
 import { Leaf, MapPin, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 async function getFarmer(id: string) {
-  const res = await fetch(`https://of.kaayaka.in/api/v1/farmers/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/farmers/${id}`, {
     cache: "no-store",
   });
   return res.json();

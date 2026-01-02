@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import AdminNav from "@/components/AdminNav";
 import ProduceModal from "@/components/ProduceModel";
 import { Plus, Edit3, Loader2, Inbox } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 // Use the production HTTPS URL
-const API_BASE_URL = "https://of.kaayaka.in/api/v1";
 
 export default function InventoryPage() {
   const [products, setProducts] = useState([]);

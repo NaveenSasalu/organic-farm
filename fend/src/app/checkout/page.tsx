@@ -3,6 +3,7 @@ import { useCartStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Truck } from "lucide-react";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCartStore();
@@ -24,7 +25,7 @@ export default function CheckoutPage() {
     };
 
     try {
-      const res = await fetch("https://of.kaayaka.in/api/v1/orders/", {
+      const res = await fetch(`${API_BASE_URL}/orders/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderPayload),

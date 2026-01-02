@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function ProductForm({ product, onClose, onRefresh }: any) {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export default function ProductForm({ product, onClose, onRefresh }: any) {
     const formData = new FormData(e.target);
     if (product?.id) formData.append("id", product.id);
 
-    await fetch("https://of.kaayaka.in/api/v1/products/", {
+    await fetch(`${API_BASE_URL}/products/`, {
       method: "POST",
       body: formData,
     });
