@@ -8,7 +8,7 @@ export default function FarmerListPage() {
   const [farmers, setFarmers] = useState([]);
 
   useEffect(() => {
-    fetch("https://of.kaayaka.in/api/v1/farmers/")
+    fetch("https://of.kaayaka.in/api/v1/farmers")
       .then((res) => res.json())
       .then((data) => setFarmers(data));
   }, []);

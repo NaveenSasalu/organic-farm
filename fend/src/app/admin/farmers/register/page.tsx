@@ -163,30 +163,34 @@ export default function RegisterFarmer() {
                 </p>
               </div>
             </div>
-            // Inside your return statement, add these two fields:
+
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase text-stone-400 ml-1">
+              <label className="text-xs font-black uppercase tracking-widest text-stone-400 ml-1">
                 Login Email
               </label>
-              <input
-                name="email"
-                type="email"
-                required
-                className="..."
-                placeholder="farmer@kaayaka.in"
-              />
+              <div className="relative">
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="farmer@kaayaka.in"
+                  className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-green-500 outline-none pl-12"
+                />
+              </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase text-stone-400 ml-1">
+              <label className="text-xs font-black uppercase tracking-widest text-stone-400 ml-1">
                 Temporary Password
               </label>
-              <input
-                name="password"
-                type="password"
-                required
-                className="..."
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-green-500 outline-none pl-12"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
             <button
               type="submit"
