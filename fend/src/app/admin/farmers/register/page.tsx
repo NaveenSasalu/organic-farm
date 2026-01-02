@@ -34,8 +34,12 @@ export default function RegisterFarmer() {
 
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Authentication missing. Please login as admin.");
+        return;
+      }
 
-      const res = await fetch(`https://of.kaayaka.in/api/v1/farmers`, {
+      const res = await fetch(`https://of.kaayaka.in/api/v1/farmers/`, {
         method: "POST",
         headers: {
           // 1. Manually attach the admin token
