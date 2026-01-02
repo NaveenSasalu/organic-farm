@@ -9,7 +9,7 @@ export default function FarmerListPage() {
   const [farmers, setFarmers] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/v1/farmers/`)
+    fetch(`${API_BASE_URL}/farmers/`)
       .then((res) => res.json())
       .then((data) => setFarmers(data));
   }, []);

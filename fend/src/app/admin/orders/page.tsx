@@ -11,7 +11,7 @@ export default function AdminOrdersPage() {
   const fetchOrders = async () => {
     const url =
       statusFilter === "all"
-        ? `${API_BASE_URL}/v1/orders/`
+        ? `${API_BASE_URL}/orders/`
         : `${API_BASE_URL}/orders/?status=${statusFilter}`;
     const res = await fetch(url);
     setOrders(await res.json());

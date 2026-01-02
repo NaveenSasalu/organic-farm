@@ -40,7 +40,7 @@ export default function RegisterFarmer() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/v1/farmers/`, {
+      const res = await fetch(`${API_BASE_URL}/farmers/`, {
         method: "POST",
         headers: {
           // 1. Manually attach the admin token
