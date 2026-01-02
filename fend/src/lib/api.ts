@@ -27,9 +27,10 @@ export async function fetchProducts() {
     }
 
     const data = await res.json();
+    return data;
 
     // 5. Data Integrity: Ensure we always return an array
-    return Array.isArray(data) ? data : [];
+    // return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("fetchProducts error:", error);
     return []; // Return empty array so the UI doesn't crash
