@@ -72,7 +72,7 @@ export const useAuth = () => {
       "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure";
 
     // 4. RESET APP STATE
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return { login, logout, error };
