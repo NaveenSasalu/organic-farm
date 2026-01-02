@@ -9,10 +9,12 @@ export async function fetchProducts() {
   // If on server, talk to the backend service directly via K8s DNS
   const fetchUrl = IS_SERVER
     ? "http://farm-backend:8000/api/v1/products/all"
-    : `${API_BASE_URL}/products/all`;
+    : `${API_BASE_URL}/products/all/`;
+
+  const fetchUrl1 = "https://of.kaayaka.in/api/v1/products/all/";
 
   try {
-    const res = await fetch(fetchUrl, {
+    const res = await fetch(fetchUrl1, {
       // 4. CACHE CONTROL:
       // 'no-store' ensures the Home Page doesn't show old data from the build cache
       cache: "no-store",
