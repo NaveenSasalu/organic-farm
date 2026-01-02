@@ -40,44 +40,86 @@ async def update_stock(product_id: int, qty: int, db: AsyncSession = Depends(get
 
 @router.post("/upsert")
 async def upsert_product(
-    id: Optional[int] = Form(None), # If ID exists, we update. Otherwise, we create.
+    id: Optional[int] = Form(None),
     name: str = Form(...),
     price: float = Form(...),
     stock_qty: int = Form(...),
     unit: str = Form(...),
     farmer_id: int = Form(...),
-    file: Optional[UploadFile] = File(None),
+    file: Optional[UploadFile] = File(None), # The file from the form
     db: AsyncSession = Depends(get_db)
 ):
-    image_url = None
-    if file:
-        # Assuming your previous MinIO upload function is available
+    # 1. Check if we are updating an existing product
+    product = None
+    if id:
+        product = await db.get(Product, id)
+
+    # 2. Handle the Image Logic
+    image_url = product.image_url if product else None # Keep existing by default
+
+    # ONLY upload and update if a NEW file is provided
+    if file and file.filename: 
         image_url = await upload_to_minio(file)
 
-    if id:  # --- UPDATE LOGIC ---
-        result = await db.execute(select(Product).where(Product.id == id))
-        product = result.scalar_one_or_none()
-        if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
-
+    if product:
+        # UPDATE existing
         product.name = name
         product.price = price
         product.stock_qty = stock_qty
         product.unit = unit
         product.farmer_id = farmer_id
-        if image_url:
-            product.image_url = image_url
-
-    else:  # --- CREATE LOGIC ---
-        product = Product(
-            name=name,
-            price=price,
-            stock_qty=stock_qty,
-            unit=unit,
-            farmer_id=farmer_id,
-            image_url=image_url
+        product.image_url = image_url # Will be the new URL or the old one kept above
+    else:
+        # CREATE new
+        new_product = Product(
+            name=name, price=price, stock_qty=stock_qty, 
+            unit=unit, farmer_id=farmer_id, image_url=image_url
         )
-        db.add(product)
+        db.add(new_product)
 
     await db.commit()
-    return {"status": "success", "product_id": product.id}
+    return {"message": "Success"}
+
+# @router.post("/upsert")
+# async def upsert_product(
+#     id: Optional[int] = Form(None), # If ID exists, we update. Otherwise, we create.
+#     name: str = Form(...),
+#     price: float = Form(...),
+#     stock_qty: int = Form(...),
+#     unit: str = Form(...),
+#     farmer_id: int = Form(...),
+#     file: Optional[UploadFile] = File(None),
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     image_url = None
+#     if file:
+#         # Assuming your previous MinIO upload function is available
+#         image_url = await upload_to_minio(file)
+
+#     if id:  # --- UPDATE LOGIC ---
+#         result = await db.execute(select(Product).where(Product.id == id))
+#         product = result.scalar_one_or_none()
+#         if not product:
+#             raise HTTPException(status_code=404, detail="Product not found")
+
+#         product.name = name
+#         product.price = price
+#         product.stock_qty = stock_qty
+#         product.unit = unit
+#         product.farmer_id = farmer_id
+#         if image_url:
+#             product.image_url = image_url
+
+#     else:  # --- CREATE LOGIC ---
+#         product = Product(
+#             name=name,
+#             price=price,
+#             stock_qty=stock_qty,
+#             unit=unit,
+#             farmer_id=farmer_id,
+#             image_url=image_url
+#         )
+#         db.add(product)
+
+#     await db.commit()
+#     return {"status": "success", "product_id": product.id}
