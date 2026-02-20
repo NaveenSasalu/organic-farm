@@ -27,6 +27,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 3000
 
 # Use the server.js created by standalone mode
