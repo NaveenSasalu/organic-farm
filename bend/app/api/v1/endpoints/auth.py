@@ -1,38 +1,120 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt, JWTError
 from app.core.database import get_db
-from app.core.security import create_access_token, authenticate_user
+from app.core.security import (
+    create_access_token,
+    authenticate_user,
+    blacklist_token,
+    ALGORITHM,
+)
+from app.core.config import settings
+from app.api.deps import get_current_user
+from app.models.user import User
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Import limiter (will be no-op if slowapi not installed)
+try:
+    from app.middleware.rate_limit import limiter
+except ImportError:
+    from functools import wraps
+    class NoOpLimiter:
+        def limit(self, limit_string):
+            def decorator(func):
+                return func
+            return decorator
+    limiter = NoOpLimiter()
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
-# 1. Define the JSON schema
+
 class LoginRequest(BaseModel):
-    username: str
+    username: EmailStr  # Email field (named username for OAuth2 compatibility)
     password: str
 
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+    farmer_id: int | None = None
+
+    class Config:
+        from_attributes = True
+
+
 @router.post("/login")
-async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
-    # Authenticate using the JSON data
+@limiter.limit("5/minute")
+async def login(
+    request: Request,
+    payload: LoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Authenticate user and return JWT token.
+
+    Rate limited to 5 requests per minute to prevent brute force attacks.
+    """
+    logger.info(f"Login attempt for email: {payload.username}")
+
     user = await authenticate_user(db, payload.username, payload.password)
     if not user:
+        logger.warning(f"Failed login attempt for email: {payload.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    
-    # Create the JWT
+
     access_token = create_access_token(data={"sub": user.email, "role": user.role})
-    
+
+    logger.info(f"Successful login for email: {payload.username}, role: {user.role}")
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "role": user.role,
-        "email": user.email
+        "email": user.email,
     }
 
+
 @router.post("/logout")
-async def logout():
-    # In JWT, logout is primarily handled by the client. 
-    # This endpoint can be used if you implement a token blacklist.
+async def logout(token: str = Depends(oauth2_scheme)):
+    """
+    Logout user by blacklisting their token.
+
+    The token will be invalidated and cannot be used again.
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        exp_timestamp = payload.get("exp")
+        email = payload.get("sub", "unknown")
+
+        if exp_timestamp:
+            exp_time = datetime.utcfromtimestamp(exp_timestamp)
+            blacklist_token(token, exp_time)
+            logger.info(f"User logged out: {email}")
+    except JWTError:
+        pass  # Token invalid anyway, no need to blacklist
+
     return {"detail": "Successfully logged out"}
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """
+    Get the current authenticated user's information.
+
+    Used to validate token and sync auth state.
+    """
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        role=current_user.role,
+        farmer_id=current_user.farmer_id,
+    )

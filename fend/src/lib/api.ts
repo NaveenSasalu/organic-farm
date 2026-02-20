@@ -1,22 +1,23 @@
-// 1. Define a solid Base URL with HTTPS enforcement
-export const API_BASE_URL = "https://of.kaayaka.in/api/v1";
+// 1. Define Base URLs for different contexts
+// Browser (client-side): use localhost or production URL
+const CLIENT_API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://of.kaayaka.in/api/v1";
+// Server-side (Docker/K8s): use internal service name
+const SERVER_API_URL =
+  process.env.INTERNAL_API_URL || "http://backend:8000/api/v1";
 
-// 2. Helper to determine if we are running on the server (K8s pod) or browser
+// 2. Helper to determine if we are running on the server or browser
 const IS_SERVER = typeof window === "undefined";
 
-export async function fetchProducts() {
-  // 3. INTERNAL NETWORKING (Optional but faster):
-  // If on server, talk to the backend service directly via K8s DNS
-  // const fetchUrl = IS_SERVER
-  //   ? "http://farm-backend:8000/api/v1/products/all"
-  //   : `${API_BASE_URL}/products/all/`;
+// Use appropriate URL based on context
+export const API_BASE_URL = IS_SERVER ? SERVER_API_URL : CLIENT_API_URL;
 
-  const fetchUrl1 = `${API_BASE_URL}/products/all/`;
+export async function fetchProducts(page: number = 1, pageSize: number = 100) {
+  // Use the context-aware API URL with pagination params
+  const fetchUrl = `${IS_SERVER ? SERVER_API_URL : CLIENT_API_URL}/products/public/?page=${page}&page_size=${pageSize}`;
 
   try {
-    const res = await fetch(fetchUrl1, {
-      // 4. CACHE CONTROL:
-      // 'no-store' ensures the Home Page doesn't show old data from the build cache
+    const res = await fetch(fetchUrl, {
       cache: "no-store",
       headers: {
         Accept: "application/json",
@@ -29,13 +30,40 @@ export async function fetchProducts() {
     }
 
     const data = await res.json();
-    return data;
 
-    // 5. Data Integrity: Ensure we always return an array
-    // return Array.isArray(data) ? data : [];
+    // Handle paginated response - extract items array
+    if (data && data.items) {
+      return data.items;
+    }
+
+    // Fallback for non-paginated response (backward compatibility)
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("fetchProducts error:", error);
-    return []; // Return empty array so the UI doesn't crash
+    return [];
+  }
+}
+
+// Paginated fetch that returns full response with metadata
+export async function fetchProductsPaginated(page: number = 1, pageSize: number = 20) {
+  const fetchUrl = `${IS_SERVER ? SERVER_API_URL : CLIENT_API_URL}/products/public/?page=${page}&page_size=${pageSize}`;
+
+  try {
+    const res = await fetch(fetchUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch products");
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error("fetchProductsPaginated error:", error);
+    return { items: [], total: 0, page: 1, page_size: pageSize, total_pages: 0 };
   }
 }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminNav from "@/components/AdminNav";
 import { API_BASE_URL } from "@/lib/api";
+import { validateFarmerForm, isValidEmail } from "@/lib/validation";
 import {
   UserPlus,
   MapPin,
@@ -12,6 +13,10 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+
+// Allowed MIME types for profile pictures
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function RegisterFarmer() {
   const router = useRouter();
@@ -26,28 +31,48 @@ export default function RegisterFarmer() {
     const formData = new FormData(e.currentTarget);
     const token = localStorage.getItem("token");
 
-    // Debug: Check if token exists before sending
+    // Check if token exists before sending
     if (!token) {
       setError("No active session found. Please log in again.");
       setLoading(false);
       return;
     }
 
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Authentication missing. Please login as admin.");
+    // Client-side validation
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const location = formData.get("location") as string;
+    const file = formData.get("file") as File;
+
+    const validation = validateFarmerForm({ name, email, password, location });
+    if (!validation.valid) {
+      setError(Object.values(validation.errors).join(". "));
+      setLoading(false);
+      return;
+    }
+
+    // Validate file
+    if (file && file.size > 0) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        setError("Only JPEG, PNG, and WebP images are allowed for profile pictures");
+        setLoading(false);
         return;
       }
+      if (file.size > MAX_FILE_SIZE) {
+        setError("Profile picture must be less than 5MB");
+        setLoading(false);
+        return;
+      }
+    }
 
+    try {
       const res = await fetch(`${API_BASE_URL}/farmers/`, {
         method: "POST",
         headers: {
-          // 1. Manually attach the admin token
           Authorization: `Bearer ${token}`,
-          // 2. DO NOT set Content-Type: multipart/form-data
         },
-        body: formData, // FormData contains name, email, password, location, bio, and file
+        body: formData,
       });
 
       if (res.status === 401) {
@@ -63,8 +88,9 @@ export default function RegisterFarmer() {
 
       alert("Farmer registered successfully!");
       router.push("/admin/inventory");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -155,7 +181,7 @@ export default function RegisterFarmer() {
                 <input
                   name="file"
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   required
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
@@ -192,10 +218,14 @@ export default function RegisterFarmer() {
                   name="password"
                   type="password"
                   required
+                  minLength={8}
                   className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-green-500 outline-none pl-12"
                   placeholder="••••••••"
                 />
               </div>
+              <p className="text-xs text-stone-400 ml-1">
+                Min 8 characters with uppercase, lowercase, and a number
+              </p>
             </div>
             <button
               type="submit"

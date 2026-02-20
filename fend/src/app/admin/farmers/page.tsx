@@ -9,7 +9,12 @@ export default function FarmerListPage() {
   const [farmers, setFarmers] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/farmers/`)
+    const token = localStorage.getItem("token");
+    fetch(`${API_BASE_URL}/farmers/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => res.json())
       .then((data) => setFarmers(data));
   }, []);

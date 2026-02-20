@@ -1,4 +1,3 @@
-"use client";
 import { Leaf, MapPin, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { API_BASE_URL } from "@/lib/api";

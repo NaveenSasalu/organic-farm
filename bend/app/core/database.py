@@ -1,13 +1,20 @@
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 # 1. Create the Async Engine
 # We use 'postgresql+asyncpg' to use the asynchronous driver
+# Only enable SQL logging in development mode
+is_development = os.getenv("ENVIRONMENT", "development") == "development"
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True, # Set to False in production to hide SQL logs
-    future=True
+    echo=is_development,  # Only log SQL in development
+    future=True,
+    pool_pre_ping=True,  # Verify connections before use
+    pool_size=10,  # Connection pool size
+    max_overflow=20,  # Max connections beyond pool_size
 )
 
 # 2. Create a Session factory

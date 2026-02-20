@@ -3,17 +3,17 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminNav from "@/components/AdminNav";
 import ProduceModal from "@/components/ProduceModel";
+import SafeImage from "@/components/SafeImage";
 import { Plus, Edit3, Loader2, Inbox } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
-
-// Use the production HTTPS URL
+import type { Product, Farmer } from "@/types";
 
 export default function InventoryPage() {
-  const [products, setProducts] = useState([]);
-  const [farmers, setFarmers] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -41,7 +41,9 @@ export default function InventoryPage() {
       const pData = await pRes.json();
       const fData = await fRes.json();
 
-      setProducts(Array.isArray(pData) ? pData : []);
+      // Handle paginated response - extract items array
+      const productsList = pData && pData.items ? pData.items : (Array.isArray(pData) ? pData : []);
+      setProducts(productsList);
       setFarmers(Array.isArray(fData) ? fData : []);
     } catch (error) {
       console.error("Failed to load inventory:", error);
@@ -99,7 +101,7 @@ export default function InventoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {products.map((product: any) => (
+                  {products.map((product) => (
                     <tr
                       key={product.id}
                       className="hover:bg-stone-50/50 transition group"
@@ -107,16 +109,11 @@ export default function InventoryPage() {
                       <td className="p-6">
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-2xl overflow-hidden border border-stone-100 shadow-sm bg-stone-50">
-                            <img
-                              src={
-                                product.image_url || "/placeholder-produce.png"
-                              }
+                            <SafeImage
+                              src={product.image_url}
                               alt={product.name}
+                              fallback="https://placehold.co/100x100?text=No+Image"
                               className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  "https://placehold.co/100x100?text=No+Image";
-                              }}
                             />
                           </div>
                           <div>

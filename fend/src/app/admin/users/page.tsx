@@ -21,7 +21,7 @@ export default function UserManagementPage() {
     try {
       // 1. Explicitly use HTTPS and remove trailing slash if needed
       // 2. Pass the Authorization header instead of just credentials
-      const res = await fetch(`${API_BASE_URL}/api/v1/users/`, {
+      const res = await fetch(`${API_BASE_URL}/users/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

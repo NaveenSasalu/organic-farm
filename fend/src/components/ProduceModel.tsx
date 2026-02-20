@@ -3,6 +3,20 @@
 import { X, Upload, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { API_BASE_URL } from "@/lib/api";
+import { validateProductForm } from "@/lib/validation";
+import type { Product, Farmer } from "@/types";
+
+interface ProduceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  product: Product | null;
+  farmers: Farmer[];
+  onRefresh: () => void;
+}
+
+// Allowed MIME types for uploads
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function ProduceModal({
   isOpen,
@@ -10,7 +24,7 @@ export default function ProduceModal({
   product,
   farmers,
   onRefresh,
-}: any) {
+}: ProduceModalProps) {
   const [issubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -24,18 +38,47 @@ export default function ProduceModal({
     // 1. Initialize FormData from the form fields
     const formData = new FormData(e.currentTarget);
 
-    // 2. Security: Get Role and FarmerID from LocalStorage
+    // 2. Client-side validation
+    const name = formData.get("name") as string;
+    const price = parseFloat(formData.get("price") as string);
+    const stock_qty = parseInt(formData.get("stock_qty") as string, 10);
+    const unit = formData.get("unit") as string;
+    const farmer_id = parseInt(formData.get("farmer_id") as string, 10);
+
+    const validation = validateProductForm({ name, price, stock_qty, unit, farmer_id });
+    if (!validation.valid) {
+      setErrorMessage(Object.values(validation.errors).join(". "));
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 3. Validate file if provided
+    const file = formData.get("file") as File;
+    if (file && file.size > 0) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        setErrorMessage("Only JPEG, PNG, WebP and GIF images are allowed");
+        setIsSubmitting(false);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setErrorMessage("Image size must be less than 5MB");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    // 4. Security: Get Role and FarmerID from LocalStorage
     const role = localStorage.getItem("user_role");
     const farmerId = localStorage.getItem("farmer_id");
 
-    // 3. Force the Farmer ID if the logged-in user is a Farmer
+    // 5. Force the Farmer ID if the logged-in user is a Farmer
     if (role === "farmer" && farmerId) {
       formData.set("farmer_id", farmerId);
     }
 
-    // 4. Handle ID for Edit Mode
+    // 6. Handle ID for Edit Mode
     if (product?.id) {
-      formData.append("id", product.id);
+      formData.append("id", String(product.id));
     }
 
     const token = localStorage.getItem("token");
@@ -59,8 +102,9 @@ export default function ProduceModal({
 
       onRefresh();
       onClose();
-    } catch (err: any) {
-      setErrorMessage(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to save harvest";
+      setErrorMessage(message);
       console.error("Upsert Error:", err);
     } finally {
       setIsSubmitting(false);
@@ -156,7 +200,7 @@ export default function ProduceModal({
                 className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:ring-2 focus:ring-green-600"
               >
                 <option value="">Select Farmer</option>
-                {farmers.map((f: any) => (
+                {farmers.map((f: Farmer) => (
                   <option key={f.id} value={f.id}>
                     {f.name}
                   </option>
@@ -173,7 +217,7 @@ export default function ProduceModal({
               <input
                 name="file"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 className="absolute inset-0 opacity-0 cursor-pointer"
               />
               <Upload

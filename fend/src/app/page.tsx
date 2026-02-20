@@ -3,6 +3,8 @@ import { Leaf, Info } from "lucide-react";
 import AddToCartButton from "@/components/AddToCartButton";
 import CartCounter from "@/components/CartCounter";
 import Link from "next/link";
+import { sanitizeImageUrl } from "@/lib/validation";
+import type { Product } from "@/types";
 
 // This forces the page to be dynamic and fetch fresh data from DB on every visit
 export const dynamic = "force-dynamic";
@@ -58,7 +60,7 @@ export default async function Home() {
 
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product: any) => (
+          {products.map((product: Product) => (
             <div
               key={product.id}
               className="group bg-white rounded-[2rem] border border-stone-200 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col"
@@ -67,7 +69,7 @@ export default async function Home() {
               <div className="aspect-[4/3] bg-stone-100 relative overflow-hidden">
                 {product.image_url ? (
                   <img
-                    src={product.image_url}
+                    src={sanitizeImageUrl(product.image_url, "/placeholder-produce.png")}
                     alt={product.name}
                     className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
                   />
@@ -86,7 +88,7 @@ export default async function Home() {
                 >
                   {product.farmer?.profile_pic ? (
                     <img
-                      src={product.farmer.profile_pic}
+                      src={sanitizeImageUrl(product.farmer.profile_pic, "/placeholder-farmer.png")}
                       className="w-8 h-8 rounded-full object-cover border-2 border-green-100"
                       alt={product.farmer.name}
                     />

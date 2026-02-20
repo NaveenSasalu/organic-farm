@@ -1,30 +1,48 @@
 "use client"; // Critical for Next.js App Router
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/useAuth"; // Adjust path based on your setup
-import { Leaf, Lock, Mail, AlertCircle } from "lucide-react";
+import { useAuth } from "@/lib/useAuth";
+import { Leaf, Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
+import { isValidEmail } from "@/lib/validation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [localError, setLocalError] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Get the login function from your custom hook
   const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError("");
+    setError("");
+
+    // Client-side validation
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!password) {
+      setError("Password is required");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      // All the fetch, localStorage, and routing logic
-      // is now handled inside this single call
       await login(email, password);
-    } catch (err: any) {
-      // If the hook throws an error, catch and display it here
-      setLocalError(err.message || "Failed to connect to the secure server.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to connect to the secure server.";
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -95,9 +113,16 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-stone-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-800 transition shadow-lg active:scale-95"
+            disabled={isLoading}
+            className="w-full bg-stone-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-green-800 transition shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Login to Dashboard
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} /> Logging in...
+              </>
+            ) : (
+              "Login to Dashboard"
+            )}
           </button>
         </form>
       </div>
