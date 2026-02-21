@@ -23,7 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: frontend
-          image: naveensasalu/farm-frontend:latest
+          image: naveensasalu/farm-frontend:602a805c5d4de29d45185ab0b9e8ee3c39e966c2
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
