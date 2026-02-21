@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the code
 COPY . .
 
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser && chown -R appuser:appgroup /app
+RUN addgroup --system appgroup && adduser --system --uid 1001 --ingroup appgroup appuser && chown -R appuser:appgroup /app
 USER appuser
 
 # Expose the port FastAPI runs on
