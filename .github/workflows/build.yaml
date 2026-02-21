@@ -8,6 +8,10 @@ on:
       - "fend/**"
       - ".github/workflows/build.yaml"
 
+permissions:
+  contents: write
+  actions: read
+
 env:
   REGISTRY: docker.io
   BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/farm-backend
@@ -36,13 +40,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -50,37 +49,22 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.BACKEND_IMAGE }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest
-
       - name: Build and Push Backend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./bend
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:latest
 
   # Build Frontend
   build-frontend:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -88,24 +72,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.FRONTEND_IMAGE }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest
-
       - name: Build and Push Frontend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./fend
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:latest
 
   # Update Kubernetes manifests (triggers ArgoCD)
   update-manifests:
@@ -116,26 +90,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Kustomize
-        uses: imranismail/setup-kustomize@v2
+          fetch-depth: 0
 
       - name: Update Backend Image Tag
         if: needs.build-backend.result == 'success'
         run: |
-          cd k8s/overlays/prod
-          kustomize edit set image farm-backend=${{ env.BACKEND_IMAGE }}:${{ needs.build-backend.outputs.image-tag }}
+          sed -i "s#farm-backend:.*#farm-backend:${{ github.sha }}#g" k8s/bend-deploy.yaml
 
       - name: Update Frontend Image Tag
         if: needs.build-frontend.result == 'success'
         run: |
-          cd k8s/overlays/prod
-          kustomize edit set image farm-frontend=${{ env.FRONTEND_IMAGE }}:${{ needs.build-frontend.outputs.image-tag }}
+          sed -i "s#farm-frontend:.*#farm-frontend:${{ github.sha }}#g" k8s/fend-deploy.yaml
 
-      - name: Commit and Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add k8s/overlays/prod/kustomization.yaml
-          git diff --staged --quiet || git commit -m "chore: update image tags [skip ci]"
-          git push
+      - name: Commit updated manifests
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: "k8s/"
+          message: "GitOps: update image tags to ${{ github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

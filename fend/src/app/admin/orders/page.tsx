@@ -20,7 +20,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setRole(localStorage.getItem("user_role"));
+    setRole(localStorage.getItem("user_role") as UserRole | null);
   }, []);
 
   const fetchOrders = async () => {
@@ -152,7 +152,7 @@ export default function OrdersPage() {
 
         {/* Filter Bar */}
         <div className="flex gap-4 mb-8 bg-white p-2 rounded-3xl border border-stone-200 shadow-sm overflow-x-auto no-scrollbar">
-          {["all", "pending", "confirmed", "packed", "delivered", "cancelled"].map(
+          {(["all", "pending", "confirmed", "packed", "delivered", "cancelled"] as const).map(
             (s) => (
               <button
                 key={s}
