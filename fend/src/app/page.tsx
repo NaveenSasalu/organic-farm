@@ -2,6 +2,7 @@ import { fetchProducts } from "@/lib/api";
 import { Leaf, Info } from "lucide-react";
 import AddToCartButton from "@/components/AddToCartButton";
 import CartCounter from "@/components/CartCounter";
+import FarmerLink from "@/components/FarmerLink";
 import Link from "next/link";
 import { sanitizeImageUrl } from "@/lib/validation";
 import type { Product } from "@/types";
@@ -82,8 +83,8 @@ export default async function Home() {
 
               {/* Farmer Badge */}
               <div className="px-8 pt-6">
-                <a
-                  href={`/farmer/${product.farmer?.id}`}
+                <FarmerLink
+                  farmerId={product.farmer?.id || 0}
                   className="inline-flex items-center gap-2 group/farmer"
                 >
                   {product.farmer?.profile_pic ? (
@@ -103,7 +104,7 @@ export default async function Home() {
                       {product.farmer?.name || "Verified Local Farmer"}
                     </span>
                   </span>
-                </a>
+                </FarmerLink>
               </div>
 
               {/* Product Info */}
