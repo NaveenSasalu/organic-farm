@@ -155,9 +155,9 @@ const ALLOWED_IMAGE_DOMAINS = [
   "localhost",
   "127.0.0.1",
   "of.kaayaka.in",
+  "mnio.kaayaka.in",
   "placehold.co",
   "via.placeholder.com",
-  // MinIO domains (add your actual MinIO domain here)
   "minio",
   "organic-farm-minio",
 ];

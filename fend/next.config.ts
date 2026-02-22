@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://placehold.co https://via.placeholder.com https://of.kaayaka.in http://localhost:* https://localhost:*",
+              "img-src 'self' data: blob: https://placehold.co https://via.placeholder.com https://of.kaayaka.in https://mnio.kaayaka.in http://localhost:* https://localhost:*",
               "font-src 'self'",
               "connect-src 'self' https://of.kaayaka.in http://localhost:* https://localhost:* ws://localhost:*",
               "frame-ancestors 'none'",
@@ -66,6 +66,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "via.placeholder.com",
+      },
+      {
+        protocol: "https",
+        hostname: "mnio.kaayaka.in",
       },
     ],
   },
