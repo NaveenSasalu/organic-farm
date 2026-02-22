@@ -84,6 +84,7 @@ export default async function Home() {
               <div className="px-8 pt-6">
                 <Link
                   href={`/farmer/${product.farmer?.id || "#"}`}
+                  prefetch={false}
                   className="inline-flex items-center gap-2 group/farmer"
                 >
                   {product.farmer?.profile_pic ? (

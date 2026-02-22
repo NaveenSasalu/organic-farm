@@ -1,12 +1,18 @@
 import { Leaf, MapPin, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { API_BASE_URL } from "@/lib/api";
+import { sanitizeImageUrl } from "@/lib/validation";
 
 async function getFarmer(id: string) {
-  const res = await fetch(`${API_BASE_URL}/farmers/${id}`, {
-    cache: "no-store",
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE_URL}/farmers/${id}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 // src/app/farmer/[id]/page.tsx
@@ -39,7 +45,7 @@ export default async function FarmerPage({
 
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
             <img
-              src={farmer.profile_pic || "https://via.placeholder.com/150"}
+              src={sanitizeImageUrl(farmer.profile_pic, "https://via.placeholder.com/150")}
               className="w-48 h-48 rounded-[3rem] object-cover border-4 border-white/20 shadow-2xl"
             />
             <div className="text-center md:text-left">
@@ -71,7 +77,7 @@ export default async function FarmerPage({
                 className="border border-stone-100 rounded-[2rem] p-4 hover:shadow-lg transition"
               >
                 <img
-                  src={product.image_url}
+                  src={sanitizeImageUrl(product.image_url, "/placeholder-produce.png")}
                   className="w-full h-48 object-cover rounded-2xl mb-4"
                 />
                 <h3 className="font-bold text-xl">{product.name}</h3>
