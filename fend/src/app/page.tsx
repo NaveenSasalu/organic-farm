@@ -82,9 +82,8 @@ export default async function Home() {
 
               {/* Farmer Badge */}
               <div className="px-8 pt-6">
-                <Link
-                  href={`/farmer/${product.farmer?.id || "#"}`}
-                  prefetch={false}
+                <a
+                  href={`/farmer/${product.farmer?.id}`}
                   className="inline-flex items-center gap-2 group/farmer"
                 >
                   {product.farmer?.profile_pic ? (
@@ -104,7 +103,7 @@ export default async function Home() {
                       {product.farmer?.name || "Verified Local Farmer"}
                     </span>
                   </span>
-                </Link>
+                </a>
               </div>
 
               {/* Product Info */}
