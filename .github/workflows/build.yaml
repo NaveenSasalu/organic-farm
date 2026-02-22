@@ -81,31 +81,32 @@ jobs:
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
             ${{ env.FRONTEND_IMAGE }}:latest
 
-  # Update Kubernetes manifests (triggers ArgoCD)
+  # Update k-apps manifests (triggers ArgoCD)
   update-manifests:
     needs: [build-backend, build-frontend]
     if: always() && (needs.build-backend.result == 'success' || needs.build-frontend.result == 'success')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout k-apps repo
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          repository: NaveenSasalu/k-apps
+          token: ${{ secrets.K_APPS_TOKEN }}
 
       - name: Update Backend Image Tag
         if: needs.build-backend.result == 'success'
         run: |
-          sed -i "s#farm-backend:.*#farm-backend:${{ github.sha }}#g" k8s/bend-deploy.yaml
+          sed -i "s#farm-backend:.*#farm-backend:${{ github.sha }}#g" organic-farm/bend-deploy.yaml
 
       - name: Update Frontend Image Tag
         if: needs.build-frontend.result == 'success'
         run: |
-          sed -i "s#farm-frontend:.*#farm-frontend:${{ github.sha }}#g" k8s/fend-deploy.yaml
+          sed -i "s#farm-frontend:.*#farm-frontend:${{ github.sha }}#g" organic-farm/fend-deploy.yaml
 
       - name: Commit updated manifests
         uses: EndBug/add-and-commit@v9
         with:
-          add: "k8s/"
-          message: "GitOps: update image tags to ${{ github.sha }}"
+          add: "organic-farm/"
+          message: "GitOps: update organic-farm images to ${{ github.sha }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.K_APPS_TOKEN }}
