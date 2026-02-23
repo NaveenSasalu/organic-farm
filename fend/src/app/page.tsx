@@ -1,5 +1,5 @@
 import { fetchProducts } from "@/lib/api";
-import { Leaf, Info } from "lucide-react";
+import { Leaf, Info, Package } from "lucide-react";
 import AddToCartButton from "@/components/AddToCartButton";
 import CartCounter from "@/components/CartCounter";
 import FarmerLink from "@/components/FarmerLink";
@@ -30,7 +30,16 @@ export default async function Home() {
               Organic Oasis
             </h1>
           </Link>
-          <CartCounter />
+          <div className="flex items-center gap-4">
+            <Link
+              href="/track"
+              className="flex items-center gap-1.5 text-sm font-bold text-stone-500 hover:text-green-700 transition-colors"
+            >
+              <Package size={18} />
+              <span className="hidden sm:inline">Track Order</span>
+            </Link>
+            <CartCounter />
+          </div>
         </div>
       </header>
 
