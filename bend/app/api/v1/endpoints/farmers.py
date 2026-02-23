@@ -12,7 +12,7 @@ from typing import Optional
 from sqlalchemy.orm import selectinload
 from app.core.security import get_password_hash
 from app.models.user import User
-from app.api.deps import get_current_admin
+from app.api.deps import get_current_admin, get_current_user
 from pydantic import EmailStr, validate_email
 from pydantic_core import PydanticCustomError
 
@@ -107,6 +107,45 @@ async def register_farmer(
         await db.rollback()
         logger.error(f"Error creating farmer: {e}")
         raise HTTPException(status_code=500, detail="Failed to create farmer account")
+
+@router.put("/{farmer_id}")
+async def update_farmer(
+    farmer_id: int,
+    name: Optional[str] = Form(None, min_length=2, max_length=100),
+    location: Optional[str] = Form(None, min_length=5, max_length=200),
+    bio: Optional[str] = Form(None, min_length=10, max_length=1000),
+    file: Optional[UploadFile] = File(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update a farmer profile. Admin or the farmer themselves."""
+    # Authorization: admin or the farmer's own user account
+    if current_user.role != "admin" and current_user.farmer_id != farmer_id:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this farmer")
+
+    result = await db.execute(select(Farmer).where(Farmer.id == farmer_id))
+    farmer = result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+
+    try:
+        if name is not None:
+            farmer.name = name.strip()
+        if location is not None:
+            farmer.location = location.strip()
+        if bio is not None:
+            farmer.bio = bio.strip()
+        if file is not None:
+            farmer.profile_pic = await upload_to_minio(file)
+
+        await db.commit()
+        return {"message": "Farmer updated", "farmer_id": farmer.id}
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error updating farmer: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update farmer")
+
 
 @router.get("/{farmer_id}")
 async def get_farmer_details(farmer_id: int, db: AsyncSession = Depends(get_db)):

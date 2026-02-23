@@ -1,7 +1,9 @@
+import re
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 from app.core.database import get_db
@@ -9,6 +11,7 @@ from app.core.security import (
     create_access_token,
     authenticate_user,
     blacklist_token,
+    get_password_hash,
     ALGORITHM,
 )
 from app.core.config import settings
@@ -39,6 +42,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str
@@ -47,6 +56,51 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+@router.post("/register")
+async def register(
+    payload: RegisterRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public user registration. Creates a user with 'farmer' role."""
+    # Validate name
+    name = payload.name.strip()
+    if not name or len(name) < 2:
+        raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
+
+    # Validate password strength
+    password = payload.password
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+    if not re.search(r'[A-Z]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'[a-z]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
+    if not re.search(r'\d', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one digit")
+
+    # Check email uniqueness
+    existing = await db.execute(select(User).where(User.email == payload.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    new_user = User(
+        email=payload.email,
+        hashed_password=get_password_hash(password),
+        role="farmer",
+    )
+    db.add(new_user)
+    await db.commit()
+
+    # Auto-login: return token
+    access_token = create_access_token(data={"sub": new_user.email, "role": new_user.role})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": new_user.role,
+        "email": new_user.email,
+    }
 
 
 @router.post("/login")

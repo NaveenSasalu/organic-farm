@@ -1,14 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import AdminNav from "@/components/AdminNav";
+import FarmerEditModal from "@/components/FarmerEditModal";
 import Link from "next/link";
-import { UserPlus, MapPin, Info, ExternalLink } from "lucide-react";
+import { UserPlus, MapPin, ExternalLink, Pencil } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 
 export default function FarmerListPage() {
   const [farmers, setFarmers] = useState([]);
+  const [editingFarmer, setEditingFarmer] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchFarmers = useCallback(() => {
     const token = localStorage.getItem("token");
     fetch(`${API_BASE_URL}/farmers/`, {
       headers: {
@@ -18,6 +20,10 @@ export default function FarmerListPage() {
       .then((res) => res.json())
       .then((data) => setFarmers(data));
   }, []);
+
+  useEffect(() => {
+    fetchFarmers();
+  }, [fetchFarmers]);
 
   return (
     <div className="min-h-screen bg-stone-50 p-8">
@@ -69,11 +75,25 @@ export default function FarmerListPage() {
                 >
                   View Public Profile <ExternalLink size={12} />
                 </Link>
+                <button
+                  onClick={() => setEditingFarmer(farmer)}
+                  className="text-stone-400 hover:text-green-800 text-xs font-black uppercase tracking-widest flex items-center gap-1"
+                >
+                  <Pencil size={12} /> Edit
+                </button>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {editingFarmer && (
+        <FarmerEditModal
+          farmer={editingFarmer}
+          onClose={() => setEditingFarmer(null)}
+          onRefresh={fetchFarmers}
+        />
+      )}
     </div>
   );
 }

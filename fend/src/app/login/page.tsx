@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { Leaf, Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
 import { isValidEmail } from "@/lib/validation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -124,6 +125,13 @@ export default function LoginPage() {
               "Login to Dashboard"
             )}
           </button>
+
+          <p className="text-center text-sm text-stone-500">
+            Don't have an account?{" "}
+            <Link href="/register" className="text-green-700 font-bold hover:underline">
+              Register here
+            </Link>
+          </p>
         </form>
       </div>
     </div>
