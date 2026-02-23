@@ -122,9 +122,28 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup."""
+    """Ensure database tables exist with correct schema and start application."""
+    from sqlalchemy import text
+    from app.core.database import engine, Base
+    # Import all models so Base.metadata knows about them
+    from app.models import product, order, user  # noqa: F401
+
+    async with engine.begin() as conn:
+        # Create any missing tables
+        await conn.run_sync(Base.metadata.create_all)
+        # Add any missing columns to existing tables (safe idempotent migrations)
+        migrations = [
+            "ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_date DATE",
+            "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS is_harvested BOOLEAN NOT NULL DEFAULT FALSE",
+        ]
+        for sql in migrations:
+            try:
+                await conn.execute(text(sql))
+            except Exception as e:
+                logger.warning(f"Migration skipped: {e}")
+
     logger.info(
-        f"Application starting up",
+        f"Application starting up - database tables verified",
         extra={"environment": settings.ENVIRONMENT}
     )
 
