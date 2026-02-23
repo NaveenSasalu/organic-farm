@@ -7,7 +7,7 @@ import Link from "next/link";
 import { sanitizeImageUrl } from "@/lib/validation";
 import type { Product } from "@/types";
 
-// This forces the page to be dynamic and fetch fresh data from DB on every visit
+// Force dynamic rendering - fetch fresh data from DB on every visit
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
