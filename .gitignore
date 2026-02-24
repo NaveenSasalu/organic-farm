@@ -14,6 +14,5 @@ node_modules/
 dist/
 
 bend/create_admin.py
-bend/tests
 
 *.md

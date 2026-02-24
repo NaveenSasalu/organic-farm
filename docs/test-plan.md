@@ -27,6 +27,7 @@
 16. [AdminNav Component](#16-adminnav-component)
 17. [Farmer Registration Page](#17-farmer-registration-page-adminfarmersregister)
 18. [Cross-Cutting Quality](#18-cross-cutting-quality)
+19. [Test Automation Strategy](#19-test-automation-strategy)
 
 ---
 
@@ -880,6 +881,92 @@
 
 ---
 
+## 19. Test Automation Strategy
+
+### 19.1 Frameworks & Tooling
+
+| Layer | Framework | Runner | Assertion Library |
+|-------|-----------|--------|-------------------|
+| Backend unit tests | pytest 8.0 + pytest-asyncio | `pytest --tb=short -q` | pytest assert |
+| Backend integration tests | pytest + httpx AsyncClient | `pytest --tb=short -q` | pytest assert |
+| Frontend unit tests | Vitest + @testing-library/react | `npx vitest run` | vitest expect + jest-dom matchers |
+
+### 19.2 File Structure
+
+```
+bend/
+  tests/
+    conftest.py          # Shared fixtures (DB, client, users, tokens)
+    test_auth.py         # Auth endpoint integration tests
+    test_products.py     # Product endpoint integration tests
+    test_orders.py       # Order endpoint integration tests
+    test_farmers.py      # Farmer endpoint integration tests
+    test_users.py        # User management integration tests
+    test_security.py     # Security utility unit tests
+    test_schemas.py      # Pydantic schema validation unit tests
+
+fend/
+  vitest.config.ts       # Vitest configuration
+  vitest.setup.ts        # Global test setup (jest-dom, localStorage mock)
+  src/
+    __tests__/
+      validation.test.ts # Validation utility unit tests
+      store.test.ts      # Zustand cart store unit tests
+```
+
+### 19.3 Backend Test Database
+
+- **Engine:** SQLite in-memory (`sqlite+aiosqlite:///:memory:`)
+- **Isolation:** Tables created before each test module, dropped after
+- **No external deps:** No PostgreSQL, MinIO, or Redis needed in CI
+- **Fixture chain:** `test_engine` → `test_session` → `client` (with FastAPI dep override)
+
+### 19.4 Mocking Strategies
+
+| What | How | Why |
+|------|-----|-----|
+| Database | SQLite in-memory via `test_engine` fixture | No PostgreSQL in CI |
+| MinIO uploads | Not mocked — farmer registration tests use `unittest.mock.patch` on `upload_to_minio` | Avoids S3 dependency |
+| Token blacklist | `clear_token_blacklist` autouse fixture clears `_token_blacklist` dict | Prevents cross-test leakage |
+| localStorage (frontend) | Mocked in `vitest.setup.ts` with in-memory object | jsdom has no real localStorage |
+| Zustand persist | Works with mocked localStorage; `useCartStore.setState()` resets between tests | Store isolation |
+
+### 19.5 CI Integration
+
+```yaml
+# In .github/workflows/build.yaml
+test-backend → build-backend → update-manifests
+test-frontend → build-frontend → update-manifests
+```
+
+- Test jobs run **after** change detection, **before** Docker builds
+- Build jobs depend on test jobs — failing tests block deployment
+- Tests are skipped when their respective directory has no changes
+- Build jobs use `if: always() && (needs.test-*.result == 'success' || needs.test-*.result == 'skipped')` pattern
+
+### 19.6 Coverage Targets
+
+| Layer | Current Tests | Target Tests | Coverage Goal |
+|-------|---------------|-------------|---------------|
+| Backend | 20 | ~70 | All API endpoints, auth flows, schema validation, security utils |
+| Frontend | 0 | ~47 | All validation functions, cart store operations |
+
+### 19.7 Automated Test IDs
+
+| ID | Test File | Count | Category |
+|----|-----------|-------|----------|
+| TA-BE-SEC | `test_security.py` | ~10 | Unit — password hashing, JWT, token blacklist |
+| TA-BE-SCH | `test_schemas.py` | ~12 | Unit — Pydantic schema validation |
+| TA-BE-AUTH | `test_auth.py` | ~10 | Integration — login, register, logout, token rejection |
+| TA-BE-PROD | `test_products.py` | ~11 | Integration — product CRUD, stock, public listing |
+| TA-BE-ORD | `test_orders.py` | ~13 | Integration — order create, cancel, status, tracking |
+| TA-BE-FARM | `test_farmers.py` | ~8 | Integration — farmer CRUD, public listing |
+| TA-BE-USR | `test_users.py` | ~10 | Integration — user CRUD, password reset, role update |
+| TA-FE-VAL | `validation.test.ts` | ~35 | Unit — email, password, form, image URL validation |
+| TA-FE-CART | `store.test.ts` | ~12 | Unit — cart add/remove/update/clear, totals |
+
+---
+
 ## Summary
 
 | Section | Test Cases | Positive | Negative | Security | Edge |
@@ -902,4 +989,5 @@
 | 16. AdminNav Component | 7 | 6 | 0 | 1 | 0 |
 | 17. Farmer Registration Page | 10 | 4 | 5 | 0 | 1 |
 | 18. Cross-Cutting Quality | 27 | 19 | 0 | 0 | 8 |
-| **Total** | **414** | **224** | **66** | **56** | **68** |
+| 19. Test Automation Strategy | 97 | 82 | 10 | 5 | 0 |
+| **Total** | **511** | **306** | **76** | **61** | **68** |

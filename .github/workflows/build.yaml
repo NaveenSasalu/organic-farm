@@ -35,10 +35,48 @@ jobs:
             frontend:
               - 'fend/**'
 
-  # Build Backend
-  build-backend:
+  # Test Backend
+  test-backend:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r bend/requirements.txt
+
+      - name: Run backend tests
+        run: cd bend && pytest --tb=short -q
+
+  # Test Frontend
+  test-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd fend && npm ci
+
+      - name: Run frontend tests
+        run: cd fend && npx vitest run
+
+  # Build Backend
+  build-backend:
+    needs: [changes, test-backend]
+    if: always() && (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') && needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,8 +98,8 @@ jobs:
 
   # Build Frontend
   build-frontend:
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    needs: [changes, test-frontend]
+    if: always() && (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') && needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -8,14 +8,20 @@ from app.core.config import settings
 # Only enable SQL logging in development mode
 is_development = os.getenv("ENVIRONMENT", "development") == "development"
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
+_engine_kwargs = dict(
     echo=is_development,  # Only log SQL in development
     future=True,
-    pool_pre_ping=True,  # Verify connections before use
-    pool_size=10,  # Connection pool size
-    max_overflow=20,  # Max connections beyond pool_size
 )
+
+# SQLite (used in tests) does not support connection pool parameters
+if "sqlite" not in settings.DATABASE_URL:
+    _engine_kwargs.update(
+        pool_pre_ping=True,  # Verify connections before use
+        pool_size=10,  # Connection pool size
+        max_overflow=20,  # Max connections beyond pool_size
+    )
+
+engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 # 2. Create a Session factory
 # This is what we use to create new database sessions in our routes
