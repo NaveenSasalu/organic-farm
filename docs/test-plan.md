@@ -18,6 +18,7 @@
 7. [Cart & Checkout (Frontend)](#7-cart--checkout-frontend)
 8. [Order Tracking (Frontend)](#8-order-tracking-frontend)
 9. [Security & Edge Cases](#9-security--edge-cases)
+10. [K8s Manifests](#10-k8s-manifests-k-appsorganic-farm)
 
 ---
 
@@ -406,6 +407,71 @@
 
 ---
 
+## 10. K8s Manifests (k-apps/organic-farm)
+
+**Files:** `bend-deploy.yaml`, `fend-deploy.yaml`, `gateway.yaml`
+**Verification:** `kubectl` commands against the `multi-farm` namespace
+
+### 10.1 Backend Deployment (`bend-deploy.yaml`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| K-01 | Backend pod runs as non-root (UID 1001) | Deployment applied | `kubectl get pod -n multi-farm -l app=backend -o jsonpath='{.items[0].spec.securityContext}'` | `runAsNonRoot: true`, `runAsUser: 1001`, `runAsGroup: 999` | Security |
+| K-02 | Read-only root filesystem | Pod running | `kubectl exec -n multi-farm <backend-pod> -- touch /testfile` | Permission denied (read-only filesystem) | Security |
+| K-03 | /tmp is writable (emptyDir) | Pod running | `kubectl exec -n multi-farm <backend-pod> -- touch /tmp/testfile` | File created successfully | Positive |
+| K-04 | All capabilities dropped | Deployment applied | Inspect container securityContext | `capabilities.drop: [ALL]`, `allowPrivilegeEscalation: false` | Security |
+| K-05 | Seccomp profile set | Deployment applied | Inspect pod securityContext | `seccompProfile.type: RuntimeDefault` | Security |
+| K-06 | Secret `farm-secrets` mounted correctly | Secret exists in `multi-farm` ns | `kubectl exec -n multi-farm <backend-pod> -- env \| grep SECRET_KEY` | `SECRET_KEY` is populated (non-empty) | Positive |
+| K-07 | DATABASE_URL resolves to PostgreSQL | Pod running | `kubectl exec -n multi-farm <backend-pod> -- env \| grep DATABASE_URL` | Contains `postgres-service.infra.svc.cluster.local` or equivalent | Positive |
+| K-08 | MinIO env vars set | Pod running | Check `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_EXTERNAL_URL` | All present; `MINIO_EXTERNAL_URL=https://mnio.kaayaka.in` | Positive |
+| K-09 | ALLOWED_ORIGINS matches frontend domain | Pod running | Check `ALLOWED_ORIGINS` env | Value is `https://of.kaayaka.in` | Positive |
+| K-10 | Backend service resolves | Pod running | `kubectl exec -n multi-farm <frontend-pod> -- wget -qO- http://backend-service:8000/health` | Returns `{"status": "healthy"}` | Positive |
+| K-11 | Resource limits enforced | Deployment applied | `kubectl describe pod -n multi-farm -l app=backend` | Requests: 256Mi/100m, Limits: 512Mi/500m | Positive |
+| K-12 | Backend has no readiness/liveness probes | Deployment applied | Inspect pod spec | No probes defined (**note: potential improvement**) | Edge |
+| K-13 | Image uses SHA tag, not `:latest` | Deployment applied | Check `image` field | Tag is a 40-char git SHA, not `latest` | Positive |
+
+### 10.2 Frontend Deployment (`fend-deploy.yaml`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| K-14 | Frontend pod runs as non-root (UID 1000) | Deployment applied | Inspect pod securityContext | `runAsNonRoot: true`, `runAsUser: 1000`, `runAsGroup: 1000` | Security |
+| K-15 | Read-only root filesystem | Pod running | `kubectl exec -n multi-farm <frontend-pod> -- touch /testfile` | Permission denied | Security |
+| K-16 | /tmp writable | Pod running | Write to `/tmp` | Succeeds (emptyDir mounted) | Positive |
+| K-17 | Next.js cache writable | Pod running | `kubectl exec -n multi-farm <frontend-pod> -- ls /app/.next/cache` | Directory exists and is writable (emptyDir mounted) | Positive |
+| K-18 | NEXT_PUBLIC_API_URL set correctly | Pod running | Check env | `https://of.kaayaka.in/api/v1` | Positive |
+| K-19 | INTERNAL_API_URL set correctly | Pod running | Check env | `http://backend-service:8000/api/v1` | Positive |
+| K-20 | Readiness probe passes | Pod running | `kubectl describe pod -n multi-farm -l app=frontend` | Readiness check on `GET /:3000` passes, pod is `Ready` | Positive |
+| K-21 | Liveness probe passes | Pod running | Check pod events | No liveness failures / restarts | Positive |
+| K-22 | Frontend service resolves | Pod running | `kubectl get svc frontend-service -n multi-farm` | Service exists, port 3000 | Positive |
+| K-23 | Image uses SHA tag | Deployment applied | Check `image` field | Tag is a 40-char git SHA | Positive |
+| K-24 | Resource limits enforced | Deployment applied | Inspect pod resources | Requests: 128Mi/50m, Limits: 256Mi/200m | Positive |
+| K-25 | Frontend can reach backend internally | Pod running | `kubectl exec -n multi-farm <frontend-pod> -- wget -qO- http://backend-service:8000/health` | Returns healthy JSON | Positive |
+
+### 10.3 Gateway / HTTPRoute (`gateway.yaml`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| K-26 | HTTPRoute accepted by Traefik gateway | Route applied | `kubectl get httproute farm-routes -n multi-farm` | Status shows `Accepted: True` by `traefik-gateway` | Positive |
+| K-27 | `/api/*` routes to backend | Gateway active | `curl https://of.kaayaka.in/api/docs` | Returns Swagger UI (backend on port 8000) | Positive |
+| K-28 | `/` routes to frontend | Gateway active | `curl https://of.kaayaka.in/` | Returns Next.js HTML (frontend on port 3000) | Positive |
+| K-29 | TLS terminates correctly | Gateway active | `curl -v https://of.kaayaka.in/` | Valid TLS certificate for `of.kaayaka.in`, no SSL errors | Positive |
+| K-30 | X-Forwarded-Proto header injected for API | Gateway active | Backend logs or `request.headers` | API requests include `X-Forwarded-Proto: https` | Positive |
+| K-31 | Non-matching host rejected | Gateway active | `curl -H "Host: evil.com" https://<node-ip>/` | No route match, connection refused or 404 | Security |
+| K-32 | Frontend path does not intercept `/api` | Gateway active | `curl https://of.kaayaka.in/api/v1/products/public` | Returns JSON from backend, not a Next.js page | Positive |
+
+### 10.4 Cross-Cutting Deployment Concerns
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| K-33 | Both pods in Running state | Deployments applied | `kubectl get pods -n multi-farm` | Both `farm-backend` and `farm-frontend` pods show `Running` / `1/1 Ready` | Positive |
+| K-34 | Pod restart count is 0 | Pods running for >5 min | Check RESTARTS column | `0` for both pods | Positive |
+| K-35 | Secret `farm-secrets` exists | Before deployment | `kubectl get secret farm-secrets -n multi-farm` | Secret exists with keys: `jwt-secret-key`, `minio-root-user`, `minio-password`, `database-url` | Positive |
+| K-36 | Namespace `multi-farm` exists | Before deployment | `kubectl get ns multi-farm` | Namespace exists | Positive |
+| K-37 | Total memory usage fits 4GB node | Both pods running | `kubectl top pods -n multi-farm` | Backend <512Mi, Frontend <256Mi; combined well under node capacity | Edge |
+| K-38 | ArgoCD sync status is healthy | ArgoCD managing app | Check ArgoCD UI or `argocd app get organic-farm` | Sync status: `Synced`, Health: `Healthy` | Positive |
+
+---
+
 ## Summary
 
 | Section | Test Cases | Positive | Negative | Security | Edge |
@@ -419,4 +485,5 @@
 | 7. Cart & Checkout | 19 | 12 | 4 | 0 | 3 |
 | 8. Order Tracking | 9 | 4 | 3 | 0 | 2 |
 | 9. Security & Edge Cases | 22 | 2 | 0 | 12 | 8 |
-| **Total** | **163** | **59** | **45** | **31** | **28** |
+| 10. K8s Manifests | 38 | 25 | 0 | 7 | 6 |
+| **Total** | **201** | **84** | **45** | **38** | **34** |
