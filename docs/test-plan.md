@@ -22,6 +22,11 @@
 11. [CI/CD Pipeline](#11-cicd-pipeline-githubworkflowsbuildyaml)
 12. [Dockerfiles](#12-dockerfiles-benddockerfile-fenddockerfile)
 13. [ArgoCD Application](#13-argocd-application-k-gitopsappsorganic-farmyaml)
+14. [Admin Pages UI](#14-admin-pages-ui)
+15. [Modal Components](#15-modal-components)
+16. [AdminNav Component](#16-adminnav-component)
+17. [Farmer Registration Page](#17-farmer-registration-page-adminfarmersregister)
+18. [Cross-Cutting Quality](#18-cross-cutting-quality)
 
 ---
 
@@ -653,6 +658,228 @@
 
 ---
 
+## 14. Admin Pages UI
+
+**Files:** `admin/orders/page.tsx`, `admin/inventory/page.tsx`, `admin/farmers/page.tsx`, `admin/users/page.tsx`
+**Prerequisite:** Logged in as admin or farmer, navigated to `/admin/*`
+
+### 14.1 Orders Page (`/admin/orders`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AP-01 | Admin sees "Logistics Dashboard" header | Logged in as admin | Navigate to `/admin/orders` | Header: "Logistics Dashboard", subtitle: "Overseeing community fulfillment" | Positive |
+| AP-02 | Farmer sees "Harvest Schedule" header | Logged in as farmer | Navigate to `/admin/orders` | Header: "Harvest Schedule", subtitle: "Items assigned to your farm for harvest" | Positive |
+| AP-03 | Status filter bar renders all 6 options | Page loaded | View filter bar | Buttons for: all, pending, confirmed, packed, delivered, cancelled | Positive |
+| AP-04 | Clicking status filter fetches filtered orders | Orders exist | Click "pending" filter | Only pending orders displayed; active filter button highlighted green | Positive |
+| AP-05 | Admin sees customer name, email, and address | Admin, orders exist | View order card | Displays customer_name (h3), customer_email, and address with MapPin icon | Positive |
+| AP-06 | Farmer sees order number only (no customer details) | Farmer, orders exist | View order card | Shows "Order #000001" — no customer_email or address displayed | Security |
+| AP-07 | Admin sees Cancel and Mark Delivered buttons | Admin, order pending/confirmed/packed | View order card | Red XCircle cancel button and "Mark Delivered" button visible | Positive |
+| AP-08 | No action buttons for cancelled/delivered orders | Admin, order cancelled or delivered | View order card | Cancel/Delivered buttons hidden; delivered shows green "Delivered" badge | Positive |
+| AP-09 | Farmer sees "Mark Harvested" button | Farmer, unharvested item, order pending | View order item | "Mark Harvested" button visible with CheckCircle2 icon | Positive |
+| AP-10 | Farmer cannot harvest on non-pending orders | Farmer, order confirmed/packed | View order item | "Mark Harvested" button not rendered (condition: `order.status === "pending"`) | Negative |
+| AP-11 | Harvested items show green badge | Order has harvested item | View order item | Green "Harvested" badge with Leaf icon, green background | Positive |
+| AP-12 | Cancelled orders displayed with reduced opacity | Cancelled orders exist | View orders list | Cancelled order cards have `opacity-60` and red border | Positive |
+| AP-13 | Empty state shown when no orders match filter | Filter returns no results | Click filter with no matching orders | "No orders found for this criteria" with Package icon | Positive |
+| AP-14 | Cancel confirmation dialog | Admin, active order | Click cancel (XCircle) button | Browser `confirm()` dialog: "Are you sure you want to cancel this order? Stock will be restored." | Positive |
+| AP-15 | Mark Delivered confirmation dialog | Admin, active order | Click "Mark Delivered" button | Browser `confirm()` dialog: "Mark this order as delivered?" | Positive |
+| AP-16 | Order ID formatted with leading zeros | Order id=1 | View order card | Displays "#000001" (6-digit zero-padded) | Positive |
+
+### 14.2 Inventory Page (`/admin/inventory`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AP-17 | Products and farmers loaded in parallel | Page mounted | Network tab | Two concurrent requests: `GET /products/` and `GET /farmers/` (Promise.all) | Positive |
+| AP-18 | Product table shows produce, farmer, stock, actions | Products exist | View table | Columns: Produce (image+name+price/unit), Farmer (badge), In Stock (bold number), Actions (edit button) | Positive |
+| AP-19 | Low stock highlighted in amber | Product with stock_qty <= 5 | View stock column | Stock number displayed in amber/orange color (`text-amber-600`) | Positive |
+| AP-20 | "Add Harvest" button opens modal in create mode | Page loaded | Click "Add Harvest" | ProduceModal opens with `product=null` (create mode) | Positive |
+| AP-21 | Edit button opens modal in edit mode | Product exists | Click Edit (Edit3 icon) on product row | ProduceModal opens with product data pre-filled | Positive |
+| AP-22 | 401 response redirects to login | Token expired | Page loads or refreshes | `window.location.href = "/login"` triggered on 401 from either products or farmers API | Security |
+| AP-23 | Loading spinner during data fetch | Page mounting | View page | Loader2 spinner with "Loading inventory..." text | Positive |
+| AP-24 | Empty state for no products | No products in DB | View table area | Inbox icon with "No products found" and "Start by adding your first harvest" | Positive |
+
+### 14.3 Farmers Page (`/admin/farmers`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AP-25 | Farmer cards display profile info | Farmers exist | View page | Each card shows: profile_pic (rounded), name, location (MapPin), bio (italic, 3-line clamp) | Positive |
+| AP-26 | "View Public Profile" links to farmer page | Farmer id=1 | Click "View Public Profile" link | Navigates to `/farmer/1` (public profile) | Positive |
+| AP-27 | "Edit" button opens FarmerEditModal | Farmer exists | Click "Edit" (Pencil icon) | FarmerEditModal opens with farmer data | Positive |
+| AP-28 | "Register New Farmer" links to registration form | Admin logged in | Click "Register New Farmer" button | Navigates to `/admin/farmers/register` | Positive |
+| AP-29 | Bio truncated with line-clamp | Farmer with long bio | View card | Bio text truncated to 3 lines with CSS `line-clamp-3` | Positive |
+| AP-30 | Farmer without profile pic uses placeholder | Farmer with null profile_pic | View card | Falls back to `https://via.placeholder.com/100` | Edge |
+| AP-31 | Grid layout responsive | Varying viewports | Resize browser | 1 column mobile, 2 columns md, 3 columns lg | Positive |
+
+### 14.4 Users Page (`/admin/users`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AP-32 | User table shows email, role, and actions | Users exist | View table | Columns: User (icon+email+id), Current Role (badge), Actions (toggle/reset/delete buttons) | Positive |
+| AP-33 | Current user row shows "(you)" label | Logged in admin | View own row | Email followed by "(you)" label in small uppercase text | Positive |
+| AP-34 | Self user hides Reset Password and Delete buttons | Logged in admin | View own row actions | Only toggle role button visible; KeyRound and Trash2 buttons hidden (`!isSelf` condition) | Security |
+| AP-35 | Admin role badge is green, farmer is gray | Users with mixed roles | View role column | Admin: `bg-green-100 text-green-700`, Farmer: `bg-stone-100 text-stone-500` | Positive |
+| AP-36 | Admin icon (ShieldCheck) vs user icon (UserIcon) | Users with mixed roles | View user column | Admin rows show ShieldCheck (green), farmer rows show UserIcon (gray) | Positive |
+| AP-37 | Toggle role switches between admin and farmer | Non-self user | Click RefreshCcw toggle icon | API call `PATCH /users/{id}/role?role=<opposite>`, list refreshes | Positive |
+| AP-38 | "Add User" button opens Create User modal | Page loaded | Click "Add User" | Create User modal opens with email/password/role fields | Positive |
+| AP-39 | 401 response redirects to login | Token expired | Page loads | `window.location.href = "/login"` triggered | Security |
+| AP-40 | Loading spinner during user fetch | Page mounting | View page | Loader2 spinner centered in table area | Positive |
+| AP-41 | Empty state for no users | No users returned | View table area | "No users found." message | Edge |
+
+---
+
+## 15. Modal Components
+
+**Files:** `ProduceModel.tsx`, `FarmerEditModal.tsx`, user modals in `admin/users/page.tsx`
+
+### 15.1 ProduceModal (Product Create/Edit)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| MC-01 | Modal title "Add New Harvest" in create mode | `product=null` | Open modal | Title reads "Add New Harvest" | Positive |
+| MC-02 | Modal title "Edit Produce" in edit mode | `product` provided | Open modal | Title reads "Edit Produce" | Positive |
+| MC-03 | Edit mode pre-fills form fields | Product with data | Open modal | name, price, stock_qty, unit, farmer_id all pre-filled via `defaultValue` | Positive |
+| MC-04 | Client-side validation rejects invalid data | Empty form | Submit form | Error message from `validateProductForm` (e.g., "Product name is required") | Negative |
+| MC-05 | File upload rejects non-image MIME types | Form filled | Upload `.pdf` file | Error: "Only JPEG, PNG, WebP and GIF images are allowed" | Negative |
+| MC-06 | File upload rejects > 5MB image | Form filled | Upload 6MB JPEG | Error: "Image size must be less than 5MB" | Negative |
+| MC-07 | Farmer role forces own farmer_id | Logged in as farmer (farmer_id=1) | Select different farmer_id, submit | `formData.set("farmer_id", "1")` overrides selection from localStorage | Security |
+| MC-08 | Edit mode appends product ID to form data | Editing product id=5 | Submit form | FormData includes `id=5` via `formData.append("id", "5")` | Positive |
+| MC-09 | Create mode does not append ID | Creating new product | Submit form | FormData does not contain `id` field | Positive |
+| MC-10 | Close button (X) closes modal | Modal open | Click X button | Modal closes, no API call made | Positive |
+| MC-11 | Successful save calls onRefresh and closes | Valid form | Submit successfully | `onRefresh()` called (data reloaded), modal closes | Positive |
+| MC-12 | 401 response shows session expired error | Token expired | Submit form | Error: "Session expired. Please log in again." | Negative |
+| MC-13 | Server error displays detail message | Backend validation fails | Submit invalid data | Error message from `response.json().detail` displayed | Negative |
+| MC-14 | Submit button disabled during submission | Form submitting | Observe button | Button disabled with Loader2 spinner, no double-submit possible | Positive |
+| MC-15 | File input accepts correct types | Modal open | View file input accept attribute | `accept="image/jpeg,image/png,image/webp,image/gif"` | Positive |
+| MC-16 | Unit select has 3 options | Modal open | View unit dropdown | Options: kg (default), bundle, pc | Positive |
+| MC-17 | Farmer select populated from props | Farmers list provided | View farmer dropdown | All farmers listed with name and id; default "Select Farmer" placeholder | Positive |
+
+### 15.2 FarmerEditModal
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| MC-18 | Modal pre-fills farmer data | Farmer with name/location/bio | Open modal | name, location, bio fields pre-filled via `defaultValue` | Positive |
+| MC-19 | Name field enforces min 2, max 100 chars | Modal open | Enter 1-char name, submit | HTML validation prevents submission (`minLength=2`, `maxLength=100`) | Negative |
+| MC-20 | Location field enforces min 5, max 200 chars | Modal open | Enter 3-char location | HTML validation prevents submission (`minLength=5`) | Negative |
+| MC-21 | Bio field enforces min 10, max 1000 chars | Modal open | Enter 5-char bio | HTML validation prevents submission (`minLength=10`) | Negative |
+| MC-22 | File upload is optional | Modal open | Submit without selecting file | Only text fields sent in FormData; no `file` key appended | Positive |
+| MC-23 | File upload with new image | Modal open | Select image file, submit | File appended to FormData, `PUT /farmers/{id}` includes multipart file | Positive |
+| MC-24 | Successful save calls onRefresh and closes | Valid form | Submit successfully | `onRefresh()` called, modal closes | Positive |
+| MC-25 | Cancel button closes without saving | Modal open | Click "Cancel" | Modal closes, no API call made | Positive |
+| MC-26 | API error displayed in red banner | Backend returns error | Submit causing server error | Red error banner shows error detail message | Negative |
+| MC-27 | File input accepts any image type | Modal open | View file input accept attribute | `accept="image/*"` (broader than ProduceModal) | Edge |
+
+### 15.3 User Management Modals (in `admin/users/page.tsx`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| MC-28 | Create User modal — form fields | Modal opened | View form | Email (required), Password (required, minLength=8), Role select (farmer/admin default=farmer) | Positive |
+| MC-29 | Create User — validation error from server | Duplicate email | Submit create form | Red error banner: "Email already registered" | Negative |
+| MC-30 | Create User — success resets form and refreshes | Valid data | Submit create form | Modal closes, form resets to defaults, user list refreshes | Positive |
+| MC-31 | Create User — cancel closes modal | Modal open | Click "Cancel" | Modal closes, no API call | Positive |
+| MC-32 | Reset Password confirmation modal | User exists | Click KeyRound button | Confirmation modal: "Reset Password?" with warning text | Positive |
+| MC-33 | Reset Password — temp password displayed | Confirmation accepted | Click "Reset" | New modal shows temp password in monospace `<code>` block | Positive |
+| MC-34 | Copy temp password to clipboard | Temp password shown | Click Copy icon | `navigator.clipboard.writeText()` called; "Copied!" indicator appears for 2 seconds | Positive |
+| MC-35 | Delete confirmation modal | Non-self user | Click Trash2 button | Confirmation modal: "Delete User?" with "This action cannot be undone" warning | Positive |
+| MC-36 | Delete — success refreshes list | Confirmation accepted | Click "Delete" | User removed, list refreshes, modal closes | Positive |
+| MC-37 | Delete — server error shows alert | Backend rejects (e.g., self-delete) | Click "Delete" | Browser `alert()` with error detail | Negative |
+
+---
+
+## 16. AdminNav Component
+
+**File:** `components/AdminNav.tsx`
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AN-01 | Admin sees 4 nav links | Logged in as admin (`user_role=admin` in localStorage) | View AdminNav | Links: Orders, Inventory, Farmers, Staff | Positive |
+| AN-02 | Farmer sees 2 nav links only | Logged in as farmer (`user_role=farmer` in localStorage) | View AdminNav | Links: Orders, Inventory (Farmers and Staff hidden) | Security |
+| AN-03 | Active page link highlighted green | On `/admin/orders` | View AdminNav | Orders link has `bg-green-800 text-white`; others have default styling | Positive |
+| AN-04 | "Store" link navigates to public storefront | Any role | Click "Store" link | Navigates to `/` (public home page) | Positive |
+| AN-05 | "Logout" button calls useAuth.logout() | Any role | Click "Logout" button | `logout()` invoked: token cleared from localStorage, cookie removed, redirected | Positive |
+| AN-06 | Role read from localStorage on component mount | localStorage has `user_role` | Component mounts | `useEffect` reads `user_role` from localStorage to determine visible links | Positive |
+| AN-07 | Responsive layout | Varying viewports | Resize browser | `flex-col` on mobile, `flex-row` on md+; nav wraps items with `flex-wrap` | Positive |
+
+---
+
+## 17. Farmer Registration Page (`/admin/farmers/register`)
+
+**File:** `admin/farmers/register/page.tsx`
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| FR-01 | Form renders all required fields | Page loaded | View form | Fields: Full Name, Farm Location, Bio (textarea), Profile Picture (file), Login Email, Temporary Password | Positive |
+| FR-02 | Client-side validation via validateFarmerForm | Empty form | Submit form | Error message from `validateFarmerForm` (e.g., name/email/password/location errors joined by ". ") | Negative |
+| FR-03 | File type validation — only JPEG/PNG/WebP | Valid form | Upload `.gif` file | Error: "Only JPEG, PNG, and WebP images are allowed for profile pictures" (GIF not allowed here) | Negative |
+| FR-04 | File size validation — max 5MB | Valid form | Upload 6MB image | Error: "Profile picture must be less than 5MB" | Negative |
+| FR-05 | Missing auth token shows session error | No token in localStorage | Submit form | Error: "No active session found. Please log in again." (early return before API call) | Negative |
+| FR-06 | 401 response shows session expired error | Token expired | Submit form | Error: "Your session expired. Please log in again to register a farmer." | Negative |
+| FR-07 | Successful registration shows alert and redirects | Valid form, admin token | Submit form | Browser `alert("Farmer registered successfully!")`, then `router.push("/admin/inventory")` | Positive |
+| FR-08 | Submit button disabled during loading | Form submitting | Observe button | Button disabled, shows Loader2 spinner with "Registering..." text | Positive |
+| FR-09 | Password hint shown below field | Page loaded | View password field | Helper text: "Min 8 characters with uppercase, lowercase, and a number" | Positive |
+| FR-10 | File input HTML accept attribute set | Page loaded | View file input | `accept="image/jpeg,image/png,image/webp"` (no GIF, unlike ProduceModal) | Positive |
+
+---
+
+## 18. Cross-Cutting Quality
+
+### 18.1 Responsive Layout & Mobile
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CQ-01 | Order cards stack vertically on mobile | Orders page, mobile viewport | View orders | Cards use `flex-col` on mobile, `md:flex-row` on desktop | Positive |
+| CQ-02 | Status filter bar scrolls horizontally on small screens | Orders page, narrow viewport | View filter bar | `overflow-x-auto` enables horizontal scroll without wrapping | Positive |
+| CQ-03 | Inventory table scrolls horizontally | Inventory page, narrow viewport | View product table | `overflow-x-auto` wrapper prevents layout break | Positive |
+| CQ-04 | Farmer cards grid adapts to viewport | Farmers page, varying widths | Resize browser | 1 col mobile, 2 col `md:`, 3 col `lg:` | Positive |
+| CQ-05 | Login/Register forms max-width constrained | Any viewport | View login page | Form container `max-w-md` centers on large screens | Positive |
+| CQ-06 | Home page product grid responsive | Public home, varying viewports | View product grid | Grid adapts from 1-column mobile to multi-column desktop | Positive |
+
+### 18.2 Loading States & Error Handling
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CQ-07 | All admin pages show loading spinners | Page mounting | Navigate to any admin page | Loader2 spinner visible during data fetch, hidden when complete | Positive |
+| CQ-08 | Network failure handled gracefully | Network disconnected | Attempt any admin API call | `try/catch` prevents crash; error logged to console or shown in alert | Edge |
+| CQ-09 | All action buttons disabled during async operations | Loading state active | Click cancel/deliver/harvest during processing | Buttons have `disabled:opacity-50` and `disabled` attribute | Positive |
+| CQ-10 | useCallback prevents unnecessary re-fetches | Inventory page | Component re-renders | `loadData` wrapped in `useCallback` with `[]` deps; no infinite fetch loop | Positive |
+
+### 18.3 Database & Storage
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CQ-11 | Database tables created on startup | Fresh database | Start backend | `await conn.run_sync(Base.metadata.create_all)` creates all tables with constraints | Positive |
+| CQ-12 | MinIO bucket auto-created on upload | Bucket doesn't exist | Upload first image | `upload_to_minio` creates bucket with public read policy if not exists | Positive |
+| CQ-13 | MinIO external URL used for stored image URLs | Image uploaded | Check returned image_url | URL uses `MINIO_EXTERNAL_URL` (https://mnio.kaayaka.in), not internal service name | Positive |
+
+### 18.4 Logging & Observability
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CQ-14 | Login attempts logged | User attempts login | Check backend logs | `logger.info("Login attempt for email: ...")` on attempt; `logger.warning` on failure | Positive |
+| CQ-15 | Successful login logged with role | User logs in | Check backend logs | `logger.info("Successful login for email: ..., role: ...")` | Positive |
+| CQ-16 | Logout logged | User logs out | Check backend logs | `logger.info("User logged out: ...")` | Positive |
+| CQ-17 | Request ID attached to all responses | Any API request | Check response headers | `X-Request-ID` header present with UUID format | Positive |
+| CQ-18 | Request timing logged | Any API request | Check backend logs | Request ID middleware logs request method, path, status code, and duration | Positive |
+
+### 18.5 Accessibility
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CQ-19 | All form inputs have associated labels | Any form page | Inspect DOM | Every `<input>` and `<select>` has a visible `<label>` element | Positive |
+| CQ-20 | Action buttons have title attributes | Users page | Inspect action buttons | Toggle role: title="Change to ...", Reset: title="Reset Password", Delete: title="Delete User" | Positive |
+| CQ-21 | Error messages use semantic contrast | Any form with error | Trigger validation error | Red text (`text-red-600`) on light red background (`bg-red-50`) with AlertCircle icon | Positive |
+| CQ-22 | Form submit buttons show loading state | Any form submitting | Submit form | Visual feedback: spinner icon, text change (e.g., "Logging in..."), button disabled | Positive |
+| CQ-23 | Status badges use color + text (not color alone) | Orders page | View status badges | Each status shows both colored badge AND text label (e.g., green badge + "delivered" text) | Positive |
+
+### 18.6 Performance (4GB Node Constraint)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CQ-24 | Backend pod stays within 512Mi limit | Production traffic | `kubectl top pod -n multi-farm -l app=backend` | Memory usage < 512Mi under normal load | Edge |
+| CQ-25 | Frontend pod stays within 256Mi limit | Production traffic | `kubectl top pod -n multi-farm -l app=frontend` | Memory usage < 256Mi under normal load | Edge |
+| CQ-26 | Token blacklist memory bounded | Many logouts over time | Monitor backend memory | Expired tokens cleaned up (in-memory blacklist doesn't grow unbounded) | Edge |
+| CQ-27 | Parallel API calls on inventory page | Inventory page load | Monitor network | Products and farmers fetched concurrently via `Promise.all`, not sequentially | Positive |
+
+---
+
 ## Summary
 
 | Section | Test Cases | Positive | Negative | Security | Edge |
@@ -670,4 +897,9 @@
 | 11. CI/CD Pipeline | 31 | 20 | 4 | 4 | 3 |
 | 12. Dockerfiles | 32 | 21 | 0 | 5 | 6 |
 | 13. ArgoCD Application | 28 | 19 | 1 | 2 | 6 |
-| **Total** | **292** | **144** | **50** | **49** | **49** |
+| 14. Admin Pages UI | 41 | 30 | 2 | 5 | 4 |
+| 15. Modal Components | 37 | 21 | 9 | 1 | 6 |
+| 16. AdminNav Component | 7 | 6 | 0 | 1 | 0 |
+| 17. Farmer Registration Page | 10 | 4 | 5 | 0 | 1 |
+| 18. Cross-Cutting Quality | 27 | 19 | 0 | 0 | 8 |
+| **Total** | **414** | **224** | **66** | **56** | **68** |
