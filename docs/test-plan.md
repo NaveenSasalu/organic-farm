@@ -21,6 +21,7 @@
 10. [K8s Manifests](#10-k8s-manifests-k-appsorganic-farm)
 11. [CI/CD Pipeline](#11-cicd-pipeline-githubworkflowsbuildyaml)
 12. [Dockerfiles](#12-dockerfiles-benddockerfile-fenddockerfile)
+13. [ArgoCD Application](#13-argocd-application-k-gitopsappsorganic-farmyaml)
 
 ---
 
@@ -592,6 +593,66 @@
 
 ---
 
+## 13. ArgoCD Application (`k-gitops/apps/organic-farm.yaml`)
+
+**App-of-Apps pattern:** `apps.yaml` (root) watches `k-gitops/apps/` -> `organic-farm.yaml` watches `k-apps/organic-farm/`
+**Repo:** `NaveenSasalu/k-gitops` (Application CRDs) -> `NaveenSasalu/k-apps` (K8s manifests)
+
+### 13.1 Application CRD Configuration
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AG-01 | Application CRD exists in ArgoCD | k-gitops synced | `kubectl get application organic-farm-app -n argocd` | Application resource exists | Positive |
+| AG-02 | Source repo is k-apps (not source code repo) | Application exists | Inspect `spec.source.repoURL` | `https://github.com/NaveenSasalu/k-apps` (NOT organic-farm source repo) | Positive |
+| AG-03 | Source path is `organic-farm` | Application exists | Inspect `spec.source.path` | `organic-farm` (matches the k-apps subdirectory) | Positive |
+| AG-04 | Target revision is main | Application exists | Inspect `spec.source.targetRevision` | `main` | Positive |
+| AG-05 | Destination namespace is multi-farm | Application exists | Inspect `spec.destination.namespace` | `multi-farm` | Positive |
+| AG-06 | Destination server is local cluster | Application exists | Inspect `spec.destination.server` | `https://kubernetes.default.svc` | Positive |
+| AG-07 | Project is default | Application exists | Inspect `spec.project` | `default` | Positive |
+
+### 13.2 Sync Policy
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AG-08 | Automated sync enabled | Application exists | Inspect `spec.syncPolicy.automated` | `automated` block is present (not manual sync) | Positive |
+| AG-09 | Prune enabled | Application exists | Inspect `spec.syncPolicy.automated.prune` | `true` — resources removed from k-apps are deleted from cluster | Positive |
+| AG-10 | Self-heal enabled | Application exists | `kubectl edit deploy farm-backend -n multi-farm` (change replicas) | ArgoCD reverts the manual change back to the declared state | Positive |
+| AG-11 | CreateNamespace enabled | Application exists | Inspect `spec.syncPolicy.syncOptions` | Contains `CreateNamespace=true` | Positive |
+| AG-12 | Prune deletes removed resources | `prune: true` active | Rename a YAML file in `k-apps/organic-farm/` | Old resources deleted, new resources created (**caution: can cause downtime**) | Edge |
+| AG-13 | Self-heal reverts manual secret change | `selfHeal: true` active | `kubectl edit secret farm-secrets -n multi-farm` | ArgoCD does NOT revert (secrets not in k-apps source — they're external) | Edge |
+
+### 13.3 App-of-Apps Root (`apps.yaml`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AG-14 | Root app `infra-root` exists | k-gitops bootstrapped | `kubectl get application infra-root -n argocd` | Application resource exists | Positive |
+| AG-15 | Root app watches k-gitops/apps/ | Root app exists | Inspect `spec.source` | `repoURL: k-gitops`, `path: apps` | Positive |
+| AG-16 | Adding new YAML to apps/ creates new Application | Root app synced | Add a new `.yaml` Application CRD to `k-gitops/apps/` | ArgoCD creates the new Application automatically | Positive |
+| AG-17 | Removing YAML from apps/ deletes the Application | Root app with `prune: true` | Remove `organic-farm.yaml` from `k-gitops/apps/` | `organic-farm-app` Application is deleted from ArgoCD (**caution: cascading delete**) | Edge |
+
+### 13.4 Sync Behavior & Health
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AG-18 | App shows Synced status | All k-apps manifests applied | `argocd app get organic-farm-app` or ArgoCD UI | Sync Status: `Synced` | Positive |
+| AG-19 | App shows Healthy status | Pods running and ready | Check ArgoCD health | Health Status: `Healthy` | Positive |
+| AG-20 | New k-apps commit triggers sync | CI pushes image tag update to k-apps | Wait for ArgoCD poll interval (default 3min) | App transitions: `Synced` -> `OutOfSync` -> `Synced` with new image | Positive |
+| AG-21 | Sync detects drift from k-apps | Manually change image tag via kubectl | Check ArgoCD status | Status: `OutOfSync` (live state differs from k-apps), then self-heals | Positive |
+| AG-22 | Failed pod makes app Degraded | Deploy a broken image tag | Check ArgoCD health | Health Status: `Degraded` or `Progressing` (CrashLoopBackOff) | Negative |
+| AG-23 | Disabled files not synced | `init-admin-job.txt` and `ingress.caml` in k-apps/organic-farm/ | Check synced resources | ArgoCD ignores non-YAML extensions (`.txt`, `.caml`); only `.yaml` files are applied | Positive |
+| AG-24 | Sync respects resource ordering | Deployments + Services + HTTPRoute in same path | Trigger sync | All resources created without ordering errors (Services before HTTPRoute references) | Positive |
+
+### 13.5 Access & Security
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| AG-25 | ArgoCD can read k-apps repo | Repo credentials configured | `argocd repo list` | `NaveenSasalu/k-apps` shows as connected with no errors | Positive |
+| AG-26 | ArgoCD can read k-gitops repo | Repo credentials configured | `argocd repo list` | `NaveenSasalu/k-gitops` shows as connected | Positive |
+| AG-27 | Application deploys only to multi-farm namespace | `organic-farm-app` synced | Check all created resources | All resources are in `multi-farm` namespace (no cross-namespace leaks) | Security |
+| AG-28 | Default project has no network restrictions | `project: default` | `argocd proj get default` | No source/destination restrictions — any repo, any cluster (**note: could be tightened**) | Security |
+
+---
+
 ## Summary
 
 | Section | Test Cases | Positive | Negative | Security | Edge |
@@ -608,4 +669,5 @@
 | 10. K8s Manifests | 38 | 25 | 0 | 7 | 6 |
 | 11. CI/CD Pipeline | 31 | 20 | 4 | 4 | 3 |
 | 12. Dockerfiles | 32 | 21 | 0 | 5 | 6 |
-| **Total** | **264** | **125** | **49** | **47** | **43** |
+| 13. ArgoCD Application | 28 | 19 | 1 | 2 | 6 |
+| **Total** | **292** | **144** | **50** | **49** | **49** |
