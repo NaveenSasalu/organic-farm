@@ -19,6 +19,7 @@
 8. [Order Tracking (Frontend)](#8-order-tracking-frontend)
 9. [Security & Edge Cases](#9-security--edge-cases)
 10. [K8s Manifests](#10-k8s-manifests-k-appsorganic-farm)
+11. [CI/CD Pipeline](#11-cicd-pipeline-githubworkflowsbuildyaml)
 
 ---
 
@@ -472,6 +473,70 @@
 
 ---
 
+## 11. CI/CD Pipeline (`.github/workflows/build.yaml`)
+
+**Workflow:** `Build and Deploy` — triggered on push to `main` when `bend/**`, `fend/**`, or the workflow file changes.
+**Jobs:** `changes` (path detection) -> `build-backend` / `build-frontend` (parallel) -> `update-manifests` (GitOps)
+**Secrets Required:** `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `K_APPS_TOKEN`
+
+### 11.1 Trigger & Path Filtering
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CI-01 | Backend change triggers backend build only | Commit modifying only `bend/` files | Push to `main` | `build-backend` runs, `build-frontend` is skipped | Positive |
+| CI-02 | Frontend change triggers frontend build only | Commit modifying only `fend/` files | Push to `main` | `build-frontend` runs, `build-backend` is skipped | Positive |
+| CI-03 | Both changed triggers both builds | Commit modifying `bend/` and `fend/` | Push to `main` | Both `build-backend` and `build-frontend` run in parallel | Positive |
+| CI-04 | Non-app changes do not trigger pipeline | Commit modifying only `docs/`, `README.md`, etc. | Push to `main` | Workflow does not run (path filter excludes) | Positive |
+| CI-05 | Workflow file change triggers pipeline | Commit modifying `.github/workflows/build.yaml` | Push to `main` | Workflow runs (included in `paths:`) | Positive |
+| CI-06 | Push to non-main branch does not trigger | Commit to `feature` branch | Push to `feature` | Workflow does not run (`branches: [main]`) | Positive |
+
+### 11.2 Docker Build & Push
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CI-07 | Backend image built and pushed | `bend/` changed, secrets valid | `build-backend` job runs | Image pushed to DockerHub as `farm-backend:<github.sha>` and `farm-backend:latest` | Positive |
+| CI-08 | Frontend image built and pushed | `fend/` changed, secrets valid | `build-frontend` job runs | Image pushed to DockerHub as `farm-frontend:<github.sha>` and `farm-frontend:latest` | Positive |
+| CI-09 | Image tag matches commit SHA | After successful build | Check DockerHub tags | Tag is exact 40-char `github.sha` of the triggering commit | Positive |
+| CI-10 | Build fails on Dockerfile syntax error | Introduce Dockerfile error | Push to `main` | Build job fails, `update-manifests` does not run for that component | Negative |
+| CI-11 | Missing DOCKERHUB_USERNAME secret | Secret not set in repo | Push with `bend/` change | `build-backend` fails at Docker login step | Negative |
+| CI-12 | Missing DOCKERHUB_TOKEN secret | Secret not set in repo | Push with `bend/` change | `build-backend` fails at Docker login step | Negative |
+| CI-13 | Backend build context is `./bend` | `build-backend` runs | Check `docker/build-push-action` context | Context is `./bend`, uses `bend/Dockerfile` | Positive |
+| CI-14 | Frontend build context is `./fend` | `build-frontend` runs | Check `docker/build-push-action` context | Context is `./fend`, uses `fend/Dockerfile` | Positive |
+
+### 11.3 Manifest Update (GitOps)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CI-15 | update-manifests runs when backend build succeeds | `build-backend` succeeded | Check `update-manifests` job | Job runs, sed updates `farm-backend:<sha>` in `organic-farm/bend-deploy.yaml` | Positive |
+| CI-16 | update-manifests runs when frontend build succeeds | `build-frontend` succeeded | Check `update-manifests` job | Job runs, sed updates `farm-frontend:<sha>` in `organic-farm/fend-deploy.yaml` | Positive |
+| CI-17 | update-manifests runs when either build succeeds | Backend succeeds, frontend skipped | Check `update-manifests` condition | Job runs (`always() && ... == 'success'` logic), only backend manifest updated | Positive |
+| CI-18 | update-manifests skipped when both builds fail/skip | Neither build ran or both failed | Check `update-manifests` job | Job is skipped (no successful builds) | Positive |
+| CI-19 | Correct k-apps repo checked out | `update-manifests` runs | Check `actions/checkout` step | Checks out `NaveenSasalu/k-apps` using `K_APPS_TOKEN` | Positive |
+| CI-20 | sed updates only the image tag, not other fields | `update-manifests` runs | Diff the k-apps commit | Only the `image:` line changes in the deployment YAML; no other fields modified | Positive |
+| CI-21 | Commit message includes SHA | `update-manifests` runs | Check k-apps commit history | Commit message is `"GitOps: update organic-farm images to <sha>"` | Positive |
+| CI-22 | Missing K_APPS_TOKEN secret | Secret not set in repo | Push with `bend/` change, build succeeds | `update-manifests` fails at checkout step (cannot authenticate to k-apps repo) | Negative |
+| CI-23 | Expired K_APPS_TOKEN | PAT has expired | Push and build succeeds | `update-manifests` fails with 403/authentication error | Negative |
+
+### 11.4 End-to-End Pipeline Flow
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CI-24 | Full pipeline: code push to running pod | All secrets valid, ArgoCD watching k-apps | Push backend change to `main` | 1) Image built & pushed, 2) k-apps manifest updated, 3) ArgoCD syncs, 4) New pod running with new SHA | Positive |
+| CI-25 | ArgoCD detects k-apps commit | `update-manifests` committed to k-apps | Check ArgoCD within sync interval | ArgoCD shows `OutOfSync` then auto-syncs to `Synced` | Positive |
+| CI-26 | New pod runs the correct image SHA | After ArgoCD sync | `kubectl get pod -n multi-farm -l app=backend -o jsonpath='{.items[0].spec.containers[0].image}'` | Image tag matches the SHA from the triggering commit | Positive |
+| CI-27 | Rollback: revert k-apps manifest | Bad deployment | Revert the k-apps commit (git revert) | ArgoCD syncs to previous image SHA, old pod restored | Edge |
+
+### 11.5 Pipeline Security & Permissions
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| CI-28 | Workflow has minimal permissions | Workflow file | Inspect `permissions:` block | `contents: write`, `actions: read` — no broader permissions | Security |
+| CI-29 | K_APPS_TOKEN is a Classic PAT with `repo` scope | Token configured | Verify token settings at github.com/settings/tokens | Type: Classic PAT, Scope: `repo` (required for cross-repo checkout) | Security |
+| CI-30 | Secrets not leaked in logs | Pipeline runs | Check workflow logs for all jobs | No secret values (DOCKERHUB_TOKEN, K_APPS_TOKEN, DOCKERHUB_USERNAME) appear in plain text | Security |
+| CI-31 | Fork PRs cannot access secrets | Forked repo opens PR to main | PR triggers workflow (if configured) | Secrets are not available to forked PR workflows (GitHub default) | Security |
+
+---
+
 ## Summary
 
 | Section | Test Cases | Positive | Negative | Security | Edge |
@@ -486,4 +551,5 @@
 | 8. Order Tracking | 9 | 4 | 3 | 0 | 2 |
 | 9. Security & Edge Cases | 22 | 2 | 0 | 12 | 8 |
 | 10. K8s Manifests | 38 | 25 | 0 | 7 | 6 |
-| **Total** | **201** | **84** | **45** | **38** | **34** |
+| 11. CI/CD Pipeline | 31 | 20 | 4 | 4 | 3 |
+| **Total** | **232** | **104** | **49** | **42** | **37** |
