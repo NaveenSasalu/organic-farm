@@ -20,6 +20,7 @@
 9. [Security & Edge Cases](#9-security--edge-cases)
 10. [K8s Manifests](#10-k8s-manifests-k-appsorganic-farm)
 11. [CI/CD Pipeline](#11-cicd-pipeline-githubworkflowsbuildyaml)
+12. [Dockerfiles](#12-dockerfiles-benddockerfile-fenddockerfile)
 
 ---
 
@@ -537,6 +538,60 @@
 
 ---
 
+## 12. Dockerfiles (`bend/Dockerfile`, `fend/Dockerfile`)
+
+**Production files:** `bend/Dockerfile` (single-stage), `fend/Dockerfile` (multi-stage)
+**Dev files:** `bend/Dockerfile.dev`, `fend/Dockerfile.dev` (local development only)
+
+### 12.1 Backend Dockerfile (`bend/Dockerfile`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| D-01 | Image builds successfully | Valid `requirements.txt` | `docker build -t farm-backend ./bend` | Build completes with no errors | Positive |
+| D-02 | Runs as non-root user (UID 1001) | Image built | `docker run farm-backend id` | `uid=1001(appuser) gid=999(appgroup)` | Security |
+| D-03 | UID matches k-apps manifest | Image built | Compare Dockerfile `--uid 1001` with `bend-deploy.yaml` `runAsUser: 1001` | Both are UID 1001 | Positive |
+| D-04 | App files owned by appuser | Image built | `docker run farm-backend ls -la /app` | All files owned by `appuser:appgroup` | Security |
+| D-05 | Uvicorn starts and listens on port 8000 | Image built | `docker run -p 8000:8000 farm-backend` then `curl localhost:8000/health` | Returns `{"status": "healthy"}` | Positive |
+| D-06 | No `--reload` flag in production | Image built | Inspect CMD | CMD is `uvicorn app.main:app --host 0.0.0.0 --port 8000` (no `--reload`) | Security |
+| D-07 | Python bytecode disabled | Image built | Check env | `PYTHONDONTWRITEBYTECODE=1` (supports read-only filesystem) | Positive |
+| D-08 | Stdout unbuffered | Image built | Check env | `PYTHONUNBUFFERED=1` (logs stream immediately) | Positive |
+| D-09 | No pip cache in image | Image built | Check image layers | `--no-cache-dir` used in pip install; no `/root/.cache/pip` | Positive |
+| D-10 | apt lists cleaned up | Image built | Check image | `rm -rf /var/lib/apt/lists/*` executed after apt-get install | Positive |
+| D-11 | System deps present for bcrypt/postgres | Image built | `docker run farm-backend python -c "import bcrypt; import psycopg2"` | Both imports succeed (libpq-dev, build-essential installed) | Positive |
+| D-12 | Read-only filesystem compatible | Image running in K8s | K8s pod with `readOnlyRootFilesystem: true` | App starts without write errors (PYTHONDONTWRITEBYTECODE prevents .pyc writes; /tmp is emptyDir) | Positive |
+
+### 12.2 Frontend Dockerfile (`fend/Dockerfile`)
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| D-13 | Image builds successfully | Valid `package.json` | `docker build -t farm-frontend ./fend` | Build completes with no errors | Positive |
+| D-14 | Multi-stage build produces small image | Image built | `docker images farm-frontend` | Runner image is significantly smaller than builder (no `node_modules`, no source) | Positive |
+| D-15 | Runs as non-root user (node, UID 1000) | Image built | `docker run farm-frontend id` | `uid=1000(node)` | Security |
+| D-16 | UID matches k-apps manifest | Image built | Compare Dockerfile USER with `fend-deploy.yaml` `runAsUser: 1000` | Both are UID 1000 | Positive |
+| D-17 | Next.js standalone server starts on port 3000 | Image built | `docker run -p 3000:3000 farm-frontend` then `curl localhost:3000/` | Returns HTML page | Positive |
+| D-18 | NEXT_PUBLIC_API_URL baked at build time | Image built | Inspect built JS bundles | Contains `https://of.kaayaka.in/api/v1` (set during `npm run build`) | Positive |
+| D-19 | Standalone output contains only necessary files | Image built | `docker run farm-frontend ls /app` | Contains `server.js`, `.next/static`, `public/`; no `node_modules/`, no source `.tsx` files | Positive |
+| D-20 | Public assets copied | Image built | `docker run farm-frontend ls /app/public` | Contains static assets (favicon, SVGs) | Positive |
+| D-21 | Static files copied | Image built | `docker run farm-frontend ls /app/.next/static` | Contains built JS/CSS chunks | Positive |
+| D-22 | Node version mismatch between stages | Dockerfile | Inspect `FROM` lines | Builder: `node:24-alpine`, Runner: `node:18-alpine` (**note: potential compatibility issue**) | Edge |
+| D-23 | Read-only filesystem compatible | Image running in K8s | K8s pod with `readOnlyRootFilesystem: true`, emptyDir on `/tmp` and `/app/.next/cache` | App starts and serves pages without write errors | Positive |
+| D-24 | NODE_ENV set to production | Image built | `docker run farm-frontend env \| grep NODE_ENV` | `NODE_ENV=production` | Positive |
+
+### 12.3 Dev Dockerfiles
+
+| ID | Scenario | Preconditions | Steps | Expected Result | Category |
+|----|----------|---------------|-------|-----------------|----------|
+| D-25 | Backend dev builds successfully | Valid `requirements.txt` | `docker build -f bend/Dockerfile.dev -t farm-backend-dev ./bend` | Build completes | Positive |
+| D-26 | Backend dev has hot reload | Container running | Modify a `.py` file in mounted volume | Uvicorn detects change and reloads (`--reload` flag) | Positive |
+| D-27 | Backend dev runs as root | Image built | `docker run farm-backend-dev id` | `uid=0(root)` (no USER directive — dev only) | Edge |
+| D-28 | Backend dev includes curl | Image built | `docker run farm-backend-dev curl --version` | curl is available (extra dev dependency) | Positive |
+| D-29 | Frontend dev builds successfully | Valid `package.json` | `docker build -f fend/Dockerfile.dev -t farm-frontend-dev ./fend` | Build completes | Positive |
+| D-30 | Frontend dev has hot reload | Container running | Modify a `.tsx` file in mounted volume | Next.js detects change and hot-reloads (`npm run dev`) | Positive |
+| D-31 | Frontend dev runs as root | Image built | `docker run farm-frontend-dev id` | `uid=0(root)` (no USER directive — dev only) | Edge |
+| D-32 | Frontend dev uses different node version | Dockerfile.dev | Inspect `FROM` line | Uses `node:20-alpine` (differs from prod builder `node:24` and runner `node:18`) | Edge |
+
+---
+
 ## Summary
 
 | Section | Test Cases | Positive | Negative | Security | Edge |
@@ -552,4 +607,5 @@
 | 9. Security & Edge Cases | 22 | 2 | 0 | 12 | 8 |
 | 10. K8s Manifests | 38 | 25 | 0 | 7 | 6 |
 | 11. CI/CD Pipeline | 31 | 20 | 4 | 4 | 3 |
-| **Total** | **232** | **104** | **49** | **42** | **37** |
+| 12. Dockerfiles | 32 | 21 | 0 | 5 | 6 |
+| **Total** | **264** | **125** | **49** | **47** | **43** |
